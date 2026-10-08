@@ -1262,6 +1262,7 @@ async function boot(){
   document.addEventListener("visibilitychange",()=>{ if(document.visibilityState==="visible") resync(); });
   addEventListener("online",()=>{ resync(); render(); }); addEventListener("offline",()=>render());
 }
+addEventListener("hashchange",()=>{ const m=location.hash.match(/^#tarea-([0-9a-f-]{36})$/); if(m&&S.session){ if(DATA().tasks[m[1]]) taskModal(m[1]); else toast("Esa tarea ya no existe."); } });
 renderTabbar(); boot();
 })();
 </script>
