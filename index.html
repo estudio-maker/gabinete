@@ -519,7 +519,27 @@ const APP_URL=location.origin+location.pathname.replace(/index\.html$/,"");
 const taskLink=id=>APP_URL+"#tarea-"+id;
 const okMail=v=>/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(v||"").trim());
 const ICON="apple-touch-icon.png";
-const APP_VERSION="2026-10-09.5";
+const APP_VERSION="2026-10-09.6";
+/* Novedades: la más nueva primero. Se muestran solas al entrar a una versión nueva. */
+const CHANGELOG=[
+ {v:"2026-10-09.6",d:"2026-10-09",items:[
+  ["bell","Después de cada actualización aparece esta lista con los cambios. Podés volver a verla en <b>Mi cuenta → Novedades</b>."]]},
+ {v:"2026-10-09.5",d:"2026-10-09",items:[
+  ["flag","<b>Mis tareas se ordena sola por relevancia:</b> primero lo vencido o que vence hoy, después Urgente y Alta, después lo que tiene fecha. Las tareas con fecha suben solas a medida que se acerca el vencimiento."]]},
+ {v:"2026-10-09.4",d:"2026-10-09",items:[
+  ["bell","Aviso de actualización con botón <b>Actualizar</b> (cartel en la app y notificación)."]]},
+ {v:"2026-10-09.3",d:"2026-10-09",items:[
+  ["lock","<b>Tareas privadas:</b> al crear una tarea podés marcarla como privada con el ojo. Solo la ven quien la creó y sus responsables; el resto del equipo no la ve en ninguna sección ni en el historial."],
+  ["eye","En <b>Mis tareas</b> hay una tabla de <b>Tareas privadas</b> que podés ocultar o mostrar con el ojo. Una privada se puede hacer visible más adelante; una visible no se puede ocultar."]]},
+ {v:"2026-10-09.1",d:"2026-10-09",items:[
+  ["edit","<b>Checklist:</b> tocá un ítem para corregir el texto, y arrastrá desde los puntitos para cambiar el orden."],
+  ["team","<b>Varios responsables por tarea:</b> en el campo Responsables escribí <b>@</b> (o tocá +) y elegí a una o más personas. Cada una la ve en sus tareas y recibe el aviso."],
+  ["bell","<b>Notificaciones en el celular y la computadora</b> cuando te asignan una tarea. Activalas una vez en <b>Mi cuenta → Notificaciones</b> (en iPhone, con Gabinete agregado a la pantalla de inicio)."]]},
+ {v:"2026-10-08.2",d:"2026-10-08",items:[
+  ["hat","<b>Proveedores y contratistas:</b> anotá en cada tarea a quién le pediste presupuesto o trabajo, con WhatsApp y llamada, y marcá cuando respondan. Nueva sección <b>Proveedores</b> con la agenda compartida."],
+  ["sun","<b>Apariencia clara u oscura</b> a elección de cada persona, en Mi cuenta."],
+  ["check","La app se actualiza sola cuando hay una versión nueva, sin reinstalar ni perder datos."]]}
+];
 
 /* ---------- utilidades ---------- */
 const $=(s,r=document)=>r.querySelector(s), $$=(s,r=document)=>[...r.querySelectorAll(s)];
@@ -1333,6 +1353,17 @@ ${ro?(list.length?"":`<span class="muted small">Sin responsable</span>`):`<input
   };
   draw(false); return {redraw:draw};
 }
+function newsModal(sinceV){
+  const idx=sinceV?CHANGELOG.findIndex(c=>c.v===sinceV):-1;
+  let L=idx>0?CHANGELOG.slice(0,idx):idx===0?[]:CHANGELOG.slice(0,6); const all=!L.length; if(all) L=CHANGELOG.slice(0,6);
+  const T=TODAY(); const lab=d=>d===T?"Hoy":d===addD(T,-1)?"Ayer":longD(d);
+  const byDay={}; L.forEach(c=>{ (byDay[c.d]=byDay[c.d]||[]).push(...c.items); });
+  modal(`<div class="sheet-h"><span style="color:var(--accent)">${ic("bell")}</span><h2>${sinceV===undefined||all?"Novedades de Gabinete":"Qué cambió en esta actualización"}</h2><span class="sp"></span><button class="icon-btn" data-act="newsOk" aria-label="Cerrar">${ic("x")}</button></div>
+<div class="sheet-b">${Object.keys(byDay).map(d=>`<div style="display:grid;gap:8px"><span class="eyebrow">${esc(lab(d))}</span>${byDay[d].map(([i,tx])=>`<div class="row" style="align-items:flex-start;gap:10px;flex-wrap:nowrap"><span style="width:30px;height:30px;border-radius:8px;display:grid;place-items:center;background:var(--accentbg);color:var(--accent);flex:none">${ic(i)}</span><span style="font-size:13.5px;line-height:1.5">${tx}</span></div>`).join("")}</div>`).join("")}
+<div class="row"><span class="muted small">Versión ${esc(APP_VERSION)}</span><span class="sp"></span><button class="btn pri" data-act="newsOk">Entendido</button></div></div>`,"narrow");
+  ls.set("gab.seenV",APP_VERSION);
+}
+function maybeNews(){ const seen=ls.get("gab.seenV"); if(seen===APP_VERSION) return; if($("#layer").innerHTML||S.hashTask){ ls.set("gab.seenV",APP_VERSION); return; } newsModal(seen||""); }
 function profileModal(){
   const me=DATA().members[S.meId];
   modal(`<div class="sheet-h"><h2>Mi cuenta</h2><span class="sp"></span><button class="icon-btn" data-act="close" aria-label="Cerrar">${ic("x")}</button></div>
@@ -1347,7 +1378,7 @@ function profileModal(){
   return `<div class="row"><span class="muted small" style="font-weight:400;flex:1">Te avisa al instante cuando te asignan una tarea.</span><button class="btn pri sm" data-act="pushOn">${ic("bell")}Activar</button></div>`; })()}</div>
 ${S.isAdmin?`<div class="fld"><span>Administración</span><div class="row"><span class="muted small" style="flex:1;min-width:180px;font-weight:400">Pedile a todo el equipo que cargue la última versión de Gabinete.</span><button class="btn sm" data-act="notifyUpdate">${ic("bell")}Avisar actualización a todos</button></div></div>`:""}
 <div class="row"><button class="btn" data-act="memEdit" data-mid="${esc(S.meId||"")}">${ic("edit")}Editar mis datos</button><span class="sp"></span><button class="btn danger" data-act="signOut">Cerrar sesión</button></div>
-<p class="muted small" style="margin:0">Versión ${esc(APP_VERSION)}</p></div>`,"narrow");
+<div class="row"><span class="muted small">Versión ${esc(APP_VERSION)}</span><span class="sp"></span><button class="btn ghost sm" data-act="news">${ic("bell")}Novedades</button></div></div>`,"narrow");
 }
 const curTheme=()=>{ const t=ls.get("gab.theme"); return t==="light"||t==="dark"?t:"auto"; };
 function setTheme(k){ const r=document.documentElement;
@@ -1391,6 +1422,8 @@ document.addEventListener("click",e=>{
     case "whoami": profileModal(); break;
     case "theme": setTheme(ds.t); profileModal(); break;
     case "pushOn": enablePush(); break;
+    case "news": newsModal(undefined); break;
+    case "newsOk": ls.set("gab.seenV",APP_VERSION); closeModal(); break;
     case "notifyUpdate": notifyUpdateAll(); break;
     case "privAsk": $("#privZone").innerHTML=`<span class="confirm" style="font-size:12.5px">¿Que la vea todo el equipo? Después no se puede volver a ocultar. <button class="btn sm" data-act="privNo">No</button><button class="btn sm pri" data-act="privYes" data-id="${esc(ds.id)}">${ic("eye")}Hacer visible</button></span>`; break;
     case "privNo": refreshTask(); break;
@@ -1613,7 +1646,7 @@ async function startSession(session){
   if(!me) return showNotMember();
   S.meId=me.id; S.isAdmin=!!me.isAdmin; S.canWrite=true; S.mode="live";
   $("#login").hidden=true;
-  renderTop(); go(S.view||"home"); subscribe(); setTimeout(pushAuto,1500);
+  renderTop(); go(S.view||"home"); subscribe(); setTimeout(pushAuto,1500); setTimeout(maybeNews,700);
   if(!projectsL().length) setTimeout(()=>projModal(null,"obra"),300);
 }
 async function loadOlder(){
