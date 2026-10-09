@@ -359,6 +359,15 @@ body.is-dragging .card:hover{border-color:var(--line)}
 .who-tag .avst{display:flex}
 .who-tag .avst .av{margin-left:-7px;box-shadow:0 0 0 2px var(--line2)}
 .who-tag .avst .av:first-child{margin-left:0}
+.priv-b{display:inline-flex;align-items:center;gap:3px;font-size:11px;font-weight:600;color:var(--ink2);padding:1px 6px 1px 4px;border-radius:5px;background:var(--line2)}
+.priv-b .ic{width:12px;height:12px}
+.card.is-priv{border-left:3px solid var(--ink3)}
+.privsec{display:grid;gap:12px;padding:14px;border:1px dashed var(--line);border-radius:12px;background:var(--colbg)}
+.privsec .sec-h h2{display:flex;align-items:center;gap:8px}
+.privsec.hid .board{display:none}
+.privtog{all:unset;cursor:pointer;display:flex;gap:10px;align-items:center;padding:9px 12px;border:1px solid var(--line);border-radius:var(--r);font-size:13px;background:var(--sheet)}
+.privtog[aria-pressed="true"]{border-color:var(--ink);background:var(--ink);color:var(--sheet)}
+.privtog .ic{width:18px;height:18px}
 .pushbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:10px 14px;border-radius:10px;background:var(--accentbg);color:var(--ink);font-size:13px}
 .pushbar .ic{color:var(--accent)}
 .ci .icon-btn{width:26px;height:26px;opacity:.5}
@@ -509,7 +518,7 @@ const APP_URL=location.origin+location.pathname.replace(/index\.html$/,"");
 const taskLink=id=>APP_URL+"#tarea-"+id;
 const okMail=v=>/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(v||"").trim());
 const ICON="apple-touch-icon.png";
-const APP_VERSION="2026-10-09.1";
+const APP_VERSION="2026-10-09.2";
 
 /* ---------- utilidades ---------- */
 const $=(s,r=document)=>r.querySelector(s), $$=(s,r=document)=>[...r.querySelectorAll(s)];
@@ -563,6 +572,9 @@ sun:'<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.
 moon:'<path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/>',
 auto:'<circle cx="12" cy="12" r="8.5"/><path d="M12 3.5v17A8.5 8.5 0 0 0 12 3.5z" fill="currentColor"/>',
 chat:'<path d="M4 20l1.3-3.9A8 8 0 1 1 8 19z"/><path d="M9 10.5c.5 2 2.5 4 4.5 4.5l1.2-1.2 1.8.8"/>',
+eye:'<path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>',
+eyeoff:'<path d="M3 3l18 18"/><path d="M10.6 5.6A10 10 0 0 1 12 5.5c6.4 0 10 6.5 10 6.5a17 17 0 0 1-3.2 3.9M6.6 6.7C3.7 8.6 2 12 2 12s3.6 6.5 10 6.5c1.6 0 3-.4 4.3-1"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/>',
+lock:'<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>',
 bell:'<path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 20.5a2 2 0 0 0 4 0"/>',
 grip:'<circle cx="9" cy="6" r="1.3" fill="currentColor"/><circle cx="15" cy="6" r="1.3" fill="currentColor"/><circle cx="9" cy="12" r="1.3" fill="currentColor"/><circle cx="15" cy="12" r="1.3" fill="currentColor"/><circle cx="9" cy="18" r="1.3" fill="currentColor"/><circle cx="15" cy="18" r="1.3" fill="currentColor"/>',
 mail:'<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3.5 6.5l8.5 6 8.5-6"/>'
@@ -606,7 +618,7 @@ let sb=null;
 const KM={
   members:{name:"name",role:"role",color:"color",email:"email",isAdmin:"is_admin",order:"sort_order",uid:"user_id"},
   projects:{name:"name",kind:"kind",code:"code",client:"client",place:"place",color:"color",archived:"archived",order:"sort_order",team:"team",lead:"lead",createdBy:"created_by",createdAt:"created_at"},
-  tasks:{title:"title",notes:"notes",projectId:"project_id",assigneeId:"assignee_id",status:"status",prio:"prio",due:"due",etapa:"etapa",checklist:"checklist",providers:"providers",coAssignees:"co_assignees",order:"sort_order",createdBy:"created_by",createdAt:"created_at",updatedAt:"updated_at",doneAt:"done_at"},
+  tasks:{title:"title",notes:"notes",projectId:"project_id",assigneeId:"assignee_id",status:"status",prio:"prio",due:"due",etapa:"etapa",checklist:"checklist",providers:"providers",coAssignees:"co_assignees",private:"private",order:"sort_order",createdBy:"created_by",createdAt:"created_at",updatedAt:"updated_at",doneAt:"done_at"},
   contacts:{name:"name",rubro:"rubro",phone:"phone",email:"email",notes:"notes",createdBy:"created_by",createdAt:"created_at"}};
 const NULLABLE=new Set(["project_id","assignee_id","lead","created_by","user_id","due"]);
 const TSC=new Set(["done_at","updated_at","created_at"]);
@@ -627,6 +639,7 @@ function put(coll,id,obj){ DATA()[coll][id]={...obj,id}; dbw(coll+"/"+id,()=>sb.
 function patch(coll,id,p){ const cur=DATA()[coll][id]; if(!cur) return; DATA()[coll][id]={...cur,...p}; const row=toDb(coll,p); if(!Object.keys(row).length) return; dbw(coll+"/"+id,()=>sb.from(coll).update(row).eq("id",id)); }
 function del(coll,id){ delete DATA()[coll][id]; dbw(coll+"/"+id,()=>sb.from(coll).delete().eq("id",id)); }
 function log(type,o={}){ const {taskId,title,projectId,...rest}=o; const cid=rid();
+  if(taskId&&(DATA().tasks[taskId]||{}).private) rest.priv=true;
   const e={ts:Date.now(),actor:S.meId||"",actorName:mName(S.meId),type,...o,cid,id:"tmp-"+cid};
   DATA().history.unshift(e);
   dbw("history",()=>sb.from("history").insert({actor:S.meId||null,actor_name:mName(S.meId),type,task_id:taskId||null,title:title||"",project_id:projectId||null,data:{...rest,cid}})); }
@@ -641,6 +654,7 @@ function createTask(o){
     createdBy:S.meId||"",createdAt:Date.now(),updatedAt:Date.now(),doneAt:o.status==="done"?Date.now():null};
   if(o.providers&&o.providers.length) t.providers=o.providers;
   if(people.length>1) t.coAssignees=people.slice(1);
+  if(o.private) t.private=true;
   put("tasks",id,t);
   const p=DATA().projects[t.projectId];
   log("create",{taskId:id,title:t.title,projectId:t.projectId,pname:p?p.name:"",to:t.assigneeId,toName:people.map(mName).join(", ")});
@@ -666,9 +680,11 @@ function moveTask(id,ch,quiet){
   if(ch.projectId!==undefined&&ch.projectId!==t.projectId){ p.projectId=ch.projectId; const np=D.projects[ch.projectId];
     log("project",{...base,from:t.projectId,fromName:base.pname,to:ch.projectId,toName:np?np.name:""}); msgs.push("Movida a "+(np?np.name:"sin tablero")); }
   if(ch.due!==undefined&&ch.due!==t.due){ p.due=ch.due; log("due",{...base,from:t.due,to:ch.due}); msgs.push(ch.due?"Vence el "+fmtD(ch.due):"Sin fecha"); }
+  if(ch.private!==undefined&&!!ch.private!==!!t.private){ p.private=!!ch.private; log("priv",{...base,to:!!ch.private}); msgs.push(ch.private?"Tarea privada: solo la ven vos y los responsables":"Ahora la ve todo el equipo"); }
   if(ch.order!==undefined&&ch.order!==t.order) p.order=ch.order;
   if(!Object.keys(p).length) return;
   p.updatedAt=Date.now(); patch("tasks",id,p);
+  if(p.private!==undefined||(t.private&&p.assigneeId!==undefined)) (chains["tasks/"+id]||Promise.resolve()).then(()=>setTimeout(bcastResync,300));
   if(!quiet&&msgs.length) toast(msgs.join(" · "));
 }
 function editTask(id,p,what){ if(!canEdit()) return toast("Tenés acceso de solo lectura."); const t=DATA().tasks[id]; if(!t) return;
@@ -745,8 +761,8 @@ function avHTML(m,cls=""){ if(!m) return `<span class="av none ${cls}" title="Si
 function projChip(p){ return `<span class="chip"><i class="sw" style="${pc(p)}"></i><span class="cd">${esc(p.code||"")}</span><span class="cn">${esc(p.name)}</span></span>`; }
 function cardHTML(t,o={}){ const D=DATA(), p=D.projects[t.projectId], ms=asg(t).map(x=>D.members[x]), m=ms[0];
   const showP=o.showProj!==false&&p, di=dueInfo(t), cl=t.checklist||[], cd=cl.filter(x=>x.d).length, done=t.status==="done";
-  return `<article class="card ${done?"done":""}" data-drag="task" data-id="${esc(t.id)}" data-act="openTask" tabindex="0" aria-label="${esc(t.title)}">
-${showP||t.etapa?`<div class="meta">${showP?projChip(p):""}${t.etapa?`<span class="tag">${esc(t.etapa)}</span>`:""}</div>`:""}
+  return `<article class="card ${done?"done":""} ${t.private?"is-priv":""}" data-drag="task" data-id="${esc(t.id)}" data-act="openTask" tabindex="0" aria-label="${esc(t.title)}">
+${showP||t.etapa||t.private?`<div class="meta">${t.private?`<span class="priv-b" title="Privada: solo la ven quien la creó y los responsables">${ic("lock")}Privada</span>`:""}${showP?projChip(p):""}${t.etapa?`<span class="tag">${esc(t.etapa)}</span>`:""}</div>`:""}
 <div class="ttl"><button class="chk ${done?"on":""}" data-act="toggle" data-id="${esc(t.id)}" aria-label="${done?"Marcar como pendiente":"Marcar como terminada"}" title="${done?"Reabrir":"Terminar"}">${ic("check")}</button><span class="t">${esc(t.title)}</span></div>
 <div class="foot">${di?`<span class="due ${di.c}">${ic("clock")}${esc(di.l)}</span>`:""}${t.prio?`<span class="prio p${t.prio}">${ic("flag")}${PRIO[t.prio]}</span>`:""}${cl.length?`<span class="cl ${cd===cl.length?"full":""}">${ic("list")}${cd}/${cl.length}</span>`:""}${t.notes?`<span class="dim" title="Tiene notas">${ic("note")}</span>`:""}${provChip(t)}<span class="sp"></span>${o.showAv===false&&ms.length<2?"":`<button class="avbtn who-tag ${m?"":"none"}" data-act="assignPick" data-id="${esc(t.id)}" aria-label="Responsables: ${ms.length?esc(ms.map(x=>x.name).join(", ")):"sin asignar"}. Tocar para cambiar" title="${ms.length?esc(ms.map(x=>x.name).join(", ")):"Asignar responsables"}"><span class="avst">${ms.length?ms.slice(0,3).map(x=>avHTML(x)).join(""):avHTML(null)}</span><span class="an">${m?esc(first(m.name))+(ms.length>1?" +"+(ms.length-1):""):"Asignar"}</span></button>`}</div>
 </article>`; }
@@ -849,10 +865,12 @@ const V={};
 V.home=()=>{
   const D=DATA(), me=D.members[S.meId];
   if(!me) return `<div class="loading"><h2>Cargando…</h2></div>`;
-  const T=TODAY(), mine=tasksL(t=>hasA(t,S.meId)&&qMatch(t)), open=mine.filter(t=>t.status!=="done");
+  const T=TODAY(), mineAll=tasksL(t=>hasA(t,S.meId)&&qMatch(t)), open=mineAll.filter(t=>t.status!=="done");
+  const mine=mineAll.filter(t=>!t.private), privs=tasksL(t=>t.private&&(hasA(t,S.meId)||t.createdBy===S.meId)&&qMatch(t));
+  const privHid=ls.get("gab.privHide")==="1", privOpen=privs.filter(t=>t.status!=="done").length;
   const over=open.filter(t=>t.due&&t.due<T).length, today=open.filter(t=>t.due===T).length;
   const week=open.filter(t=>t.due&&t.due>=T&&t.due<=addD(T,7)).length;
-  const doneW=mine.filter(t=>t.status==="done"&&t.doneAt&&t.doneAt>Date.now()-7*864e5).length;
+  const doneW=mineAll.filter(t=>t.status==="done"&&t.doneAt&&t.doneAt>Date.now()-7*864e5).length;
   const h=new Date().getHours(), sal=h<12?"Buen día":h<19?"Buenas tardes":"Buenas noches";
   return `<div class="hello"><div><div class="eyebrow">${esc(longD(T))}</div><h1>${sal}, ${esc(first(me.name))}</h1></div><span class="sp"></span><span class="muted small">${open.length} ${open.length===1?"tarea abierta":"tareas abiertas"}</span></div>
 <div class="stats">
@@ -862,9 +880,14 @@ V.home=()=>{
 <div class="stat ok"><span class="v">${doneW}</span><span class="l">Terminadas esta semana</span></div>
 </div>
 <div class="sec-h"><h2>Mis tareas</h2><span class="muted small">Arrastrá entre columnas, o soltá sobre el dock para pasarlas a otra persona o tablero.</span></div>
-<div class="board">${STATUS.map(s=>colHTML({ck:"home-"+s.k,st:s.k,title:s.n,attrs:`data-status="${s.k}"`,
+<div class="board">${STATUS.map(s=>colHTML({ck:"home-"+s.k,st:s.k,title:s.n,attrs:`data-status="${s.k}" data-private="0"`,
   tasks:sortCol(mine.filter(t=>t.status===s.k),s.k),limit:s.k==="done"?12:0,opts:{showAv:false},quick:s.k!=="done",
-  empty:s.k==="done"?"Lo terminado aparece acá":"Arrastrá tareas acá"})).join("")}</div>`;
+  empty:s.k==="done"?"Lo terminado aparece acá":"Arrastrá tareas acá"})).join("")}</div>
+<section class="privsec ${privHid?"hid":""}"><div class="sec-h"><h2>${ic("lock")}Tareas privadas</h2><span class="muted small">${privHid?`${privOpen} ${privOpen===1?"abierta":"abiertas"} · ocultas en esta pantalla`:"Solo las ven quien las creó y sus responsables. El resto del equipo no las ve en ninguna sección."}</span><span class="sp"></span>
+<button class="btn sm ghost" data-act="privHide" aria-pressed="${!privHid}" title="${privHid?"Mostrar":"Ocultar"} las tareas privadas en esta pantalla">${ic(privHid?"eye":"eyeoff")}${privHid?"Mostrar":"Ocultar"}</button></div>
+${privHid?"":`<div class="board">${STATUS.map(s=>colHTML({ck:"priv-"+s.k,st:s.k,title:s.n,attrs:`data-status="${s.k}" data-private="1"`,
+  tasks:sortCol(privs.filter(t=>t.status===s.k),s.k),limit:s.k==="done"?12:0,opts:{showAv:false},quick:s.k!=="done",
+  empty:s.k==="done"?"Lo terminado aparece acá":"Arrastrá acá para hacerla privada"})).join("")}</div>`}</section>`;
 };
 V.boards=()=>{
   const ps=projectsL(S.showArch); const D=DATA();
@@ -955,6 +978,7 @@ function hSentence(e){ const D=DATA(); const who=`<b>${esc(mName(e.actor)||e.act
     case "reopen": return ["move","Reabierta",`${who} reabrió ${tt} (${SN[e.to]||e.to})`];
     case "assign": return ["move","Asignación",`${who} pasó ${tt} ${e.from?`de ${esc(mName(e.from)||e.fromName||"—")} `:""}a <b>${esc(e.to?(mName(e.to)||e.toName||"—"):"nadie")}</b>`];
     case "project": return ["move","Tablero",`${who} movió ${tt} de ${esc(e.fromName||"sin tablero")} a <b>${esc(e.toName||pn(e.to)||"sin tablero")}</b>`];
+    case "priv": return ["",e.to?"Privada":"Visible",`${who} ${e.to?"marcó como <b>privada</b>":"hizo visible para todo el equipo"} ${tt}`];
     case "asgadd": return ["move","Asignación",`${who} sumó a <b>${esc(mName(e.to)||e.toName||"")}</b> como responsable de ${tt}`];
     case "asgrm": return ["move","Asignación",`${who} quitó a ${esc(mName(e.to)||e.toName||"")} como responsable de ${tt}`];
     case "due": return ["","Fecha",`${who} cambió el vencimiento de ${tt} a <b>${e.to?esc(fmtD(e.to)):"sin fecha"}</b>`];
@@ -1071,6 +1095,7 @@ function quickAdd(col){
   const ta=col.querySelector(".quick textarea"); const v=(ta&&ta.value||"").trim(); if(!v) return;
   const ds=col.dataset; const o={title:v};
   if(ds.status) o.status=ds.status;
+  if(ds.private==="1") o.private=true;
   if(ds.project!==undefined) o.projectId=ds.project; else o.projectId=S.lastPid&&DATA().projects[S.lastPid]?S.lastPid:"";
   if(ds.member!==undefined) o.assignees=ds.member?[ds.member]:[];
   createTask(o); render();
@@ -1091,8 +1116,9 @@ function taskModal(id){
   const acts=[...D.history,...S.histOlder].filter(e=>e.taskId===id).slice(0,12);
   const cl=t.checklist||[];
   modal(`<div class="sheet-h"><button class="chk lg ${t.status==="done"?"on":""}" data-act="toggle" data-id="${esc(id)}" aria-label="${t.status==="done"?"Reabrir tarea":"Marcar como terminada"}" ${dis}>${ic("check")}</button>
-${p?projChip(p):`<span class="muted small">Sin tablero</span>`}<span class="sp"></span><button class="icon-btn" data-act="close" aria-label="Cerrar">${ic("x")}</button></div>
+${p?projChip(p):`<span class="muted small">Sin tablero</span>`}<span class="sp"></span><button class="btn sm ${t.private?"":"ghost"}" data-act="privToggle" data-id="${esc(id)}" aria-pressed="${!!t.private}" title="${t.private?"Privada: tocá para que la vea todo el equipo":"Visible para el equipo: tocá para hacerla privada"}" ${dis}>${ic(t.private?"eyeoff":"eye")}${t.private?"Privada":"Visible"}</button><button class="icon-btn" data-act="close" aria-label="Cerrar">${ic("x")}</button></div>
 <div class="sheet-b">
+${t.private?`<p class="banner ro" style="margin:0;display:flex;gap:8px;align-items:flex-start">${ic("lock")}<span><b>Tarea privada.</b> Solo la ven ${esc([mName(t.createdBy),...asg(t).map(mName)].filter((x,i,a)=>x&&a.indexOf(x)===i).map(first).join(", ")||"vos")}. El resto del equipo no la ve en ninguna sección ni en el historial.</span></p>`:""}
 <textarea class="inp ttl-inp" id="f-title" data-f="title" rows="1" aria-label="Título" ${dis}>${esc(t.title)}</textarea>
 <div class="seg" role="group" aria-label="Estado">${STATUS.map(s=>`<button data-act="setStatus" data-s="${s.k}" aria-pressed="${t.status===s.k}" ${dis}><i class="st" style="--stc:var(--st-${s.k})"></i>${s.n}</button>`).join("")}</div>
 <div class="fld"><span>Responsables</span><div id="tp-ppl"></div></div>
@@ -1162,9 +1188,11 @@ function newTaskModal(pre={}){
 <label class="fld"><span>Prioridad</span><select class="inp" id="nt-prio">${PRIO.map((l,i)=>opt(i,l,!i)).join("")}</select></label>
 <label class="fld"><span>Etapa</span><select class="inp" id="nt-etapa">${opt("","—",1)}${ETAPAS.map(e=>opt(e,e)).join("")}</select></label></div>
 <div class="fld"><span>Pedido a (proveedores o contratistas) <span class="muted" style="font-weight:400">opcional</span></span><div class="plist" id="nt-plist"></div><div id="nt-pick"></div></div>
+<button type="button" class="privtog" id="nt-priv" aria-pressed="${!!pre.private}">${ic(pre.private?"eyeoff":"eye")}<span style="display:grid;flex:1;text-align:left"><b>${pre.private?"Tarea privada":"Visible para el equipo"}</b><span style="font-size:12px;opacity:.8">${pre.private?"Solo la ven vos y los responsables que elijas":"Tocá para hacerla privada"}</span></span></button>
 <div class="row"><span class="sp"></span><button type="button" class="btn ghost" data-act="close">Cancelar</button><button class="btn pri" type="submit">${ic("plus")}Crear tarea</button></div>
 </form>`,"");
   let people=[pre.assigneeId??S.meId].filter(x=>x&&DATA().members[x]);
+  let priv=!!pre.private; const pb=$("#nt-priv"); pb.onclick=()=>{ priv=!priv; pb.setAttribute("aria-pressed",priv); pb.innerHTML=`${ic(priv?"eyeoff":"eye")}<span style="display:grid;flex:1;text-align:left"><b>${priv?"Tarea privada":"Visible para el equipo"}</b><span style="font-size:12px;opacity:.8">${priv?"Solo la ven vos y los responsables que elijas":"Tocá para hacerla privada"}</span></span>`; };
   mountPeople($("#nt-ppl"),{pid:()=>$("#nt-proj")?.value,get:()=>people,set:l=>{ people=[...new Set(l)]; }});
   const ta=$("#nt-title"); ta.addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();$("#ntForm").requestSubmit()}});
   const sel=[];
@@ -1173,7 +1201,7 @@ function newTaskModal(pre={}){
   const picker=mountPicker($("#nt-pick"),{exclude:()=>sel,onPick:cid=>{ if(!sel.includes(cid)) sel.push(cid); drawSel(); }});
   $("#ntForm").addEventListener("submit",e=>{ e.preventDefault(); const title=$("#nt-title").value.trim(); if(!title){$("#nt-title").focus();return}
     const projectId=$("#nt-proj").value; S.lastPid=projectId||S.lastPid;
-    createTask({title,projectId,assignees:people,due:$("#nt-due").value,status:$("#nt-st").value,prio:$("#nt-prio").value,etapa:$("#nt-etapa").value,
+    createTask({title,projectId,assignees:people,private:priv,due:$("#nt-due").value,status:$("#nt-st").value,prio:$("#nt-prio").value,etapa:$("#nt-etapa").value,
       providers:sel.filter(c=>CT()[c]).map(c=>({c,at:Date.now(),ok:false}))});
     closeModal(); toast("Tarea creada"); });
 }
@@ -1356,6 +1384,8 @@ document.addEventListener("click",e=>{
     case "whoami": profileModal(); break;
     case "theme": setTheme(ds.t); profileModal(); break;
     case "pushOn": enablePush(); break;
+    case "privToggle": { const t=DATA().tasks[ds.id]; if(!t) break; moveTask(ds.id,{private:!t.private}); render(); refreshTask(); break; }
+    case "privHide": ls.set("gab.privHide",ls.get("gab.privHide")==="1"?"0":"1"); render(); break;
     case "pushOff": disablePush(); break;
     case "pushTest": pushTest(); break;
     case "pushLater": ls.set("gab.pushask","no"); render(); break;
@@ -1472,7 +1502,7 @@ function end(commit){
 function dropTask(d){
   const ds=d.tgt.dataset, ch={}, T=DATA().tasks;
   if(ds.drop==="col"){
-    if(ds.status) ch.status=ds.status; if(ds.project!==undefined) ch.projectId=ds.project;
+    if(ds.status) ch.status=ds.status; if(ds.project!==undefined) ch.projectId=ds.project; if(ds.private!==undefined) ch.private=ds.private==="1";
     if(ds.member!==undefined&&ds.member!==d.from){ const t=T[d.id], cur=asg(t), to=ds.member, fr=d.from;
       let nx=fr&&cur.includes(fr)?cur.map(x=>x===fr?to:x):(to?[...cur,to]:cur);
       if(!to) nx=cur.filter(x=>x!==fr); ch.assignees=[...new Set(nx.filter(Boolean))]; }
@@ -1548,9 +1578,11 @@ function applyChange(coll,p){
   if(coll==="members"){ const me=S.L.members[S.meId]; S.isAdmin=!!(me&&me.isAdmin); if(!me) return showNotMember(); }
   scheduleRender();
 }
+function bcastResync(){ try{ S.ch&&S.ch.send({type:"broadcast",event:"resync",payload:{}}); }catch(_){} }
 function subscribe(){
   if(S.ch) sb.removeChannel(S.ch);
-  S.ch=sb.channel("gabinete")
+  S.ch=sb.channel("gabinete",{config:{broadcast:{self:false}}})
+    .on("broadcast",{event:"resync"},()=>{ clearTimeout(S.rsT); S.rsT=setTimeout(resync,400); })
     .on("postgres_changes",{event:"*",schema:"public",table:"tasks"},p=>applyChange("tasks",p))
     .on("postgres_changes",{event:"*",schema:"public",table:"projects"},p=>applyChange("projects",p))
     .on("postgres_changes",{event:"*",schema:"public",table:"members"},p=>applyChange("members",p))
