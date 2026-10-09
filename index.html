@@ -523,7 +523,7 @@ const APP_VERSION="2026-10-09.7";
 /* Novedades: la más nueva primero. Se muestran solas al entrar a una versión nueva. */
 const CHANGELOG=[
  {v:"2026-10-09.7",d:"2026-10-09",items:[
-  ["bell","Si el celular bloquea las notificaciones, Gabinete ahora muestra los pasos para habilitarlas (también en <b>Mi cuenta → Notificaciones</b>)."]]},
+  ["bell","Si el celular bloquea las notificaciones, Gabinete ahora muestra los pasos para habilitarlas, incluso en celulares Samsung (también en <b>Mi cuenta → Notificaciones</b>)."]]},
  {v:"2026-10-09.6",d:"2026-10-09",items:[
   ["bell","Después de cada actualización aparece esta lista con los cambios. Podés volver a verla en <b>Mi cuenta → Novedades</b>."]]},
  {v:"2026-10-09.5",d:"2026-10-09",items:[
@@ -1689,8 +1689,12 @@ async function enablePush(){
   render(); if($("#layer").innerHTML&&$("#pushRow")) profileModal();
 }
 function pushHelp(){
-  const and=/Android/i.test(navigator.userAgent), app=standalone;
-  const steps=isIOS?[
+  const and=/Android/i.test(navigator.userAgent), app=standalone, sam=/SamsungBrowser/i.test(navigator.userAgent);
+  const steps=sam?[
+    "Gabinete está abierto con <b>Samsung Internet</b>. La forma más simple: borrá el ícono de Gabinete (mantenelo apretado → Desinstalar; no se pierde nada), abrí <b>Chrome</b>, entrá a <b>estudio-maker.github.io/gabinete</b> y en el menú ⋮ tocá <b>Agregar a la pantalla principal</b> → <b>Instalar</b>.",
+    "Abrí Gabinete desde el ícono nuevo → <b>Mi cuenta</b> → <b>Activar</b> → <b>Permitir</b>, y tocá <b>Probar</b>.",
+    "Si preferís seguir con Samsung Internet: abrilo → menú ☰ → <b>Configuración</b> → <b>Sitios y descargas</b> (o <b>Privacidad</b>) → <b>Notificaciones</b>; activalas y sacá <b>estudio-maker.github.io</b> de los bloqueados. Revisá también Ajustes del celular → Aplicaciones → <b>Samsung Internet</b> → Notificaciones."]
+  :isIOS?[
     "Abrí <b>Ajustes</b> del iPhone → <b>Notificaciones</b> → <b>Gabinete</b> y activá <b>Permitir notificaciones</b>.",
     "Si no aparece Gabinete en esa lista: en Safari, tocá Compartir → <b>Agregar a inicio</b>, y abrí Gabinete desde ese ícono.",
     "Volvé a Gabinete → <b>Mi cuenta</b> → <b>Activar</b> → <b>Permitir</b>."]
