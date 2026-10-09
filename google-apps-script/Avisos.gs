@@ -1,6 +1,6 @@
 /**
  * Gabinete · Pérez Ramírez Arquitectura
- * Envía el aviso por mail cuando se asigna una tarea.
+ * Envía el aviso por mail cuando se asigna una tarea (a uno o a varios responsables).
  * Se publica como "Aplicación web" desde la cuenta estudio@perezramirezarquitectura.com
  * (Ejecutar como: yo · Quién tiene acceso: cualquier usuario).
  *
@@ -45,8 +45,11 @@ function doPost(e) {
 
     var t = leer('tasks?id=eq.' + taskId + '&select=*')[0];
     if (!t) return salida({ ok: false, error: 'No se encontró la tarea.' });
-    if (!t.assignee_id) return salida({ ok: false, error: 'La tarea no tiene responsable.' });
-    var m = leer('members?id=eq.' + t.assignee_id + '&select=name,email')[0];
+    var asignados = [t.assignee_id].concat(t.co_assignees || []).filter(function (x) { return !!x; });
+    if (!asignados.length) return salida({ ok: false, error: 'La tarea no tiene responsable.' });
+    var destino = pedido.to ? String(pedido.to) : asignados[0];
+    if (asignados.indexOf(destino) < 0) return salida({ ok: false, error: 'Esa persona no es responsable de la tarea.' });
+    var m = leer('members?id=eq.' + destino + '&select=name,email')[0];
     if (!m || !m.email) return salida({ ok: false, error: 'El responsable no tiene mail cargado.' });
     var p = t.project_id ? leer('projects?id=eq.' + t.project_id + '&select=name,code')[0] : null;
 
