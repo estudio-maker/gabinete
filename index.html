@@ -519,9 +519,11 @@ const APP_URL=location.origin+location.pathname.replace(/index\.html$/,"");
 const taskLink=id=>APP_URL+"#tarea-"+id;
 const okMail=v=>/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(v||"").trim());
 const ICON="apple-touch-icon.png";
-const APP_VERSION="2026-10-09.6";
+const APP_VERSION="2026-10-09.7";
 /* Novedades: la más nueva primero. Se muestran solas al entrar a una versión nueva. */
 const CHANGELOG=[
+ {v:"2026-10-09.7",d:"2026-10-09",items:[
+  ["bell","Si el celular bloquea las notificaciones, Gabinete ahora muestra los pasos para habilitarlas (también en <b>Mi cuenta → Notificaciones</b>)."]]},
  {v:"2026-10-09.6",d:"2026-10-09",items:[
   ["bell","Después de cada actualización aparece esta lista con los cambios. Podés volver a verla en <b>Mi cuenta → Novedades</b>."]]},
  {v:"2026-10-09.5",d:"2026-10-09",items:[
@@ -1372,7 +1374,7 @@ function profileModal(){
 <span class="muted small" style="font-weight:400">Automática sigue el modo claro u oscuro del celular o la computadora.</span></div>
 <div class="fld" id="pushRow"><span>Notificaciones en este dispositivo</span>${(()=>{ const st=pushState();
   if(st==="on") return `<div class="row"><span class="pill" style="background:var(--okbg);color:var(--ok)">${ic("bell")}Activadas</span><span class="sp"></span><button class="btn ghost sm" data-act="pushTest">Probar</button><button class="btn ghost sm" data-act="pushOff">Desactivar</button></div>`;
-  if(st==="denied") return `<span class="muted small" style="font-weight:400">Están bloqueadas en este navegador. Habilitalas en la configuración del sitio y volvé a entrar.</span>`;
+  if(st==="denied") return `<div class="row"><span class="muted small" style="font-weight:400;flex:1">Están bloqueadas en este dispositivo.</span><button class="btn sm" data-act="pushHelp">Cómo habilitarlas</button></div>`;
   if(st==="ios-browser") return `<span class="muted small" style="font-weight:400">En iPhone: Compartir → «Agregar a inicio», abrí Gabinete desde ese ícono y activalas acá.</span>`;
   if(st==="unsupported") return `<span class="muted small" style="font-weight:400">Este navegador no admite notificaciones.</span>`;
   return `<div class="row"><span class="muted small" style="font-weight:400;flex:1">Te avisa al instante cuando te asignan una tarea.</span><button class="btn pri sm" data-act="pushOn">${ic("bell")}Activar</button></div>`; })()}</div>
@@ -1422,6 +1424,7 @@ document.addEventListener("click",e=>{
     case "whoami": profileModal(); break;
     case "theme": setTheme(ds.t); profileModal(); break;
     case "pushOn": enablePush(); break;
+    case "pushHelp": pushHelp(); break;
     case "news": newsModal(undefined); break;
     case "newsOk": ls.set("gab.seenV",APP_VERSION); closeModal(); break;
     case "notifyUpdate": notifyUpdateAll(); break;
@@ -1680,10 +1683,29 @@ async function enablePush(){
   if(st==="ios-browser") return toast("En iPhone: Compartir → «Agregar a inicio», abrí Gabinete desde ese ícono y activá ahí.");
   if(st==="unsupported") return toast("Este navegador no admite notificaciones.");
   try{ const perm=await Notification.requestPermission();
-    if(perm!=="granted"){ toast(perm==="denied"?"Las notificaciones están bloqueadas. Habilitalas en la configuración del navegador para este sitio.":"No se activaron las notificaciones."); render(); return; }
+    if(perm!=="granted"){ if(perm==="denied") pushHelp(); else toast("No se activaron las notificaciones."); render(); return; }
     await pushSubscribe(false);
   }catch(e){ console.warn(e); toast("No se pudieron activar las notificaciones: "+(e.message||e)); }
   render(); if($("#layer").innerHTML&&$("#pushRow")) profileModal();
+}
+function pushHelp(){
+  const and=/Android/i.test(navigator.userAgent), app=standalone;
+  const steps=isIOS?[
+    "Abrí <b>Ajustes</b> del iPhone → <b>Notificaciones</b> → <b>Gabinete</b> y activá <b>Permitir notificaciones</b>.",
+    "Si no aparece Gabinete en esa lista: en Safari, tocá Compartir → <b>Agregar a inicio</b>, y abrí Gabinete desde ese ícono.",
+    "Volvé a Gabinete → <b>Mi cuenta</b> → <b>Activar</b> → <b>Permitir</b>."]
+  :and?[
+    app?"Mantené apretado el ícono de <b>Gabinete</b> en la pantalla de inicio → <b>Información de la app</b> (ⓘ) → <b>Notificaciones</b> → activalas.":"Abrí <b>Ajustes</b> del celular → <b>Aplicaciones</b> → <b>Chrome</b> (o el navegador que uses) → <b>Notificaciones</b> → activalas.",
+    "En Chrome, entrá a <b>estudio-maker.github.io/gabinete</b>, tocá el ícono a la izquierda de la dirección (⚙ o candado) → <b>Permisos</b> → <b>Notificaciones</b> → <b>Permitir</b>. Si no lo ves: menú ⋮ → <b>Configuración</b> → <b>Configuración de sitios</b> → <b>Notificaciones</b> y sacá el sitio de <b>Bloqueados</b>.",
+    "Si abriste Gabinete desde un link de WhatsApp o del mail, abrilo directamente en Chrome (menú ⋮ → <b>Abrir en Chrome</b>).",
+    "Volvé a Gabinete → <b>Mi cuenta</b> → <b>Activar</b> → <b>Permitir</b>, y tocá <b>Probar</b>."]
+  :[
+    "Hacé clic en el ícono a la izquierda de la dirección del sitio (candado o ⚙) → <b>Notificaciones</b> → <b>Permitir</b>.",
+    "Recargá la página y volvé a <b>Mi cuenta</b> → <b>Activar</b>, y tocá <b>Probar</b>."];
+  modal(`<div class="sheet-h"><span style="color:var(--accent)">${ic("bell")}</span><h2>Habilitar notificaciones</h2><span class="sp"></span><button class="icon-btn" data-act="close" aria-label="Cerrar">${ic("x")}</button></div>
+<div class="sheet-b"><p style="margin:0">Este ${isIOS||and?"celular":"navegador"} está bloqueando las notificaciones de Gabinete, por eso no te puede preguntar. Se habilitan así:</p>
+<ol style="margin:0;padding-left:20px;display:grid;gap:10px;font-size:13.5px;line-height:1.5">${steps.map(x=>`<li>${x}</li>`).join("")}</ol>
+<div class="row"><span class="sp"></span><button class="btn pri" data-act="close">Entendido</button></div></div>`,"narrow");
 }
 async function disablePush(){ try{ const reg=await navigator.serviceWorker.getRegistration(); const sub=reg&&await reg.pushManager.getSubscription();
   if(sub){ await pushCall({action:"unsubscribe",endpoint:sub.endpoint}).catch(()=>{}); await sub.unsubscribe(); } }catch(_){}
