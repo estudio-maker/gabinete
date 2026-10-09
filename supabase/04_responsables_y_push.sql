@@ -31,3 +31,7 @@ alter table public.push_config enable row level security;
 revoke all on public.push_config from anon, authenticated;
 
 select 'ok' as resultado, (select count(*) from public.tasks) as tareas_intactas;
+
+-- Permisos para la función del servidor (rol service_role)
+grant select on public.members, public.projects, public.tasks to service_role;
+grant select, insert, update, delete on public.push_subs, public.push_config to service_role;
