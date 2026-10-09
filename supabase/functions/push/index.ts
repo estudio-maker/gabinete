@@ -68,6 +68,7 @@ async function sendPush(sub, payloadObj, vapid, subject) {
 //   unsubscribe  -> la borra
 //   notify       -> avisa a responsables de una tarea (solo a quienes están asignados)
 //   test         -> manda una notificación de prueba a mis dispositivos
+//   update_all   -> (solo admin) avisa a todos los dispositivos que hay una versión nueva
 // No necesita claves cargadas a mano: usa las variables que Supabase da a cada función.
 const SUPA = Deno.env.get("SUPABASE_URL");
 let SRK = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
@@ -135,6 +136,13 @@ Deno.serve(async (req) => {
     if (b.action === "test") {
       const subs = await rest(`push_subs?member_id=eq.${me.id}&select=*`);
       const n = await deliver(subs, { title: "Gabinete", body: "Las notificaciones funcionan en este dispositivo.", url: APP, tag: "prueba" });
+      return J({ ok: true, devices: subs.length, sent: n });
+    }
+    if (b.action === "update_all") {
+      const adm = (await rest(`members?id=eq.${me.id}&select=is_admin`))[0];
+      if (!adm || !adm.is_admin) return J({ ok: false, error: "Solo un administrador puede avisar a todos." }, 403);
+      const subs = await rest("push_subs?select=*");
+      const n = await deliver(subs, { title: "Gabinete se actualizó", body: "Tocá para abrir la versión nueva.", url: APP + "?actualizar=" + Date.now(), tag: "actualizacion" });
       return J({ ok: true, devices: subs.length, sent: n });
     }
     if (b.action === "notify") {

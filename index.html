@@ -444,6 +444,7 @@ body.is-dragging .card:hover{border-color:var(--line)}
 .ccard .ts a:hover{background:var(--line2)}
 .ccard .ts .sd{width:8px;height:8px;border-radius:50%;background:var(--stc);flex:none}
 .update-bar{position:fixed;left:50%;transform:translateX(-50%);top:calc(10px + env(safe-area-inset-top,0px));z-index:300;background:var(--ink);color:var(--sheet);border-radius:99px;padding:6px 8px 6px 16px;display:flex;gap:10px;align-items:center;font-size:13px;box-shadow:var(--lift)}
+.update-bar .ic{color:var(--tape)}
 .update-bar button{all:unset;cursor:pointer;background:var(--tape);color:var(--tapefg);font-weight:600;padding:5px 12px;border-radius:99px}
 @media (max-width:820px){
   :root{--colw:min(84vw,320px)}
@@ -518,7 +519,7 @@ const APP_URL=location.origin+location.pathname.replace(/index\.html$/,"");
 const taskLink=id=>APP_URL+"#tarea-"+id;
 const okMail=v=>/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(v||"").trim());
 const ICON="apple-touch-icon.png";
-const APP_VERSION="2026-10-09.3";
+const APP_VERSION="2026-10-09.4";
 
 /* ---------- utilidades ---------- */
 const $=(s,r=document)=>r.querySelector(s), $$=(s,r=document)=>[...r.querySelectorAll(s)];
@@ -1339,6 +1340,7 @@ function profileModal(){
   if(st==="ios-browser") return `<span class="muted small" style="font-weight:400">En iPhone: Compartir → «Agregar a inicio», abrí Gabinete desde ese ícono y activalas acá.</span>`;
   if(st==="unsupported") return `<span class="muted small" style="font-weight:400">Este navegador no admite notificaciones.</span>`;
   return `<div class="row"><span class="muted small" style="font-weight:400;flex:1">Te avisa al instante cuando te asignan una tarea.</span><button class="btn pri sm" data-act="pushOn">${ic("bell")}Activar</button></div>`; })()}</div>
+${S.isAdmin?`<div class="fld"><span>Administración</span><div class="row"><span class="muted small" style="flex:1;min-width:180px;font-weight:400">Pedile a todo el equipo que cargue la última versión de Gabinete.</span><button class="btn sm" data-act="notifyUpdate">${ic("bell")}Avisar actualización a todos</button></div></div>`:""}
 <div class="row"><button class="btn" data-act="memEdit" data-mid="${esc(S.meId||"")}">${ic("edit")}Editar mis datos</button><span class="sp"></span><button class="btn danger" data-act="signOut">Cerrar sesión</button></div>
 <p class="muted small" style="margin:0">Versión ${esc(APP_VERSION)}</p></div>`,"narrow");
 }
@@ -1384,6 +1386,7 @@ document.addEventListener("click",e=>{
     case "whoami": profileModal(); break;
     case "theme": setTheme(ds.t); profileModal(); break;
     case "pushOn": enablePush(); break;
+    case "notifyUpdate": notifyUpdateAll(); break;
     case "privAsk": $("#privZone").innerHTML=`<span class="confirm" style="font-size:12.5px">¿Que la vea todo el equipo? Después no se puede volver a ocultar. <button class="btn sm" data-act="privNo">No</button><button class="btn sm pri" data-act="privYes" data-id="${esc(ds.id)}">${ic("eye")}Hacer visible</button></span>`; break;
     case "privNo": refreshTask(); break;
     case "privYes": moveTask(ds.id,{private:false}); render(); refreshTask(); break;
@@ -1586,6 +1589,7 @@ function subscribe(){
   if(S.ch) sb.removeChannel(S.ch);
   S.ch=sb.channel("gabinete",{config:{broadcast:{self:false}}})
     .on("broadcast",{event:"resync"},()=>{ clearTimeout(S.rsT); S.rsT=setTimeout(resync,400); })
+    .on("broadcast",{event:"update"},({payload})=>{ if(payload&&payload.v&&payload.v!==APP_VERSION) showUpdateBar(); else checkUpdate(false); })
     .on("postgres_changes",{event:"*",schema:"public",table:"tasks"},p=>applyChange("tasks",p))
     .on("postgres_changes",{event:"*",schema:"public",table:"projects"},p=>applyChange("projects",p))
     .on("postgres_changes",{event:"*",schema:"public",table:"members"},p=>applyChange("members",p))
@@ -1669,11 +1673,19 @@ async function checkUpdate(onReturn){
   }catch(_){ return; }
   const busy=DRAG||$("#layer").innerHTML||S.quickOpen||(document.activeElement&&document.activeElement.matches("input,textarea,select"));
   if(onReturn&&!busy) return hardReload();
-  if(!$("#updBar")){ const d=document.createElement("div"); d.id="updBar"; d.className="update-bar"; d.setAttribute("role","status");
-    d.innerHTML=`<span>Hay una versión nueva de Gabinete</span><button data-act="reload">Actualizar</button>`; document.body.appendChild(d); }
+  showUpdateBar();
+}
+function showUpdateBar(){ if($("#updBar")) return; const d=document.createElement("div"); d.id="updBar"; d.className="update-bar"; d.setAttribute("role","status");
+  d.innerHTML=`${ic("bell")}<span>Hay una versión nueva de Gabinete</span><button data-act="reload">Actualizar</button>`; document.body.appendChild(d); }
+async function notifyUpdateAll(){
+  try{ S.ch&&S.ch.send({type:"broadcast",event:"update",payload:{v:APP_VERSION}}); }catch(_){}
+  let msg="Aviso enviado a quienes tienen Gabinete abierto";
+  try{ const j=await pushCall({action:"update_all"}); msg+=` y a ${j.sent} ${j.sent===1?"dispositivo":"dispositivos"} con notificaciones`; }catch(e){ msg+=" (las notificaciones push no se pudieron enviar: "+(e.message||e)+")"; }
+  toast(msg); log("member",{what:"avisó a todo el equipo que actualice Gabinete"});
 }
 async function hardReload(){ try{ await Promise.all([fetch(APP_URL,{cache:"reload"}),fetch(APP_URL+"index.html",{cache:"reload"})]); }catch(_){} location.reload(); }
 async function boot(){
+  if(/[?&]actualizar=/.test(location.search)) try{ history.replaceState(null,"",location.pathname+location.hash); }catch(_){}
   $("#loginLogo").src=LOGO;
   if(!window.supabase){ loginBody(`<p>No se pudo cargar el sistema. Revisá la conexión a internet y recargá la página.</p>`); return; }
   sb=window.supabase.createClient(SUPA_URL,SUPA_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
