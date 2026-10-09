@@ -519,7 +519,7 @@ const APP_URL=location.origin+location.pathname.replace(/index\.html$/,"");
 const taskLink=id=>APP_URL+"#tarea-"+id;
 const okMail=v=>/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(v||"").trim());
 const ICON="apple-touch-icon.png";
-const APP_VERSION="2026-10-09.4";
+const APP_VERSION="2026-10-09.5";
 
 /* ---------- utilidades ---------- */
 const $=(s,r=document)=>r.querySelector(s), $$=(s,r=document)=>[...r.querySelectorAll(s)];
@@ -852,6 +852,11 @@ function deleteContact(id){ const c=CT()[id]; if(!c) return;
   tasksL(t=>(t.providers||[]).some(x=>x.c===id)).forEach(t=>patch("tasks",t.id,{providers:t.providers.filter(x=>x.c!==id)}));
   del("contacts",id); log("cdel",{cname:c.name}); toast(c.name+" se quitó de la agenda"); }
 
+/* relevancia para "Mis tareas": prioridad + cercanía del vencimiento (sube sola a medida que se acerca la fecha) */
+function relScore(t){ const pr=[0,40,60][t.prio||0]||0; if(!t.due) return pr;
+  const d=dayDiff(t.due,TODAY()); const dt=d<0?100+Math.min(-d,30):d===0?90:d===1?70:d<=3?50:d<=7?30:Math.max(10,20-Math.floor((d-7)/7));
+  return pr+dt; }
+function sortRel(list){ return list.slice().sort((a,b)=>relScore(b)-relScore(a)||(b.prio||0)-(a.prio||0)||((a.due||"9999")<(b.due||"9999")?-1:(a.due||"9999")>(b.due||"9999")?1:0)||(a.order||0)-(b.order||0)); }
 function sortCol(list,k){ return k==="done"?list.slice().sort((a,b)=>(b.doneAt||0)-(a.doneAt||0)):list; }
 function colHTML(c){ const all=c.tasks; const shown=c.limit?all.slice(0,c.limit):all;
   return `<section class="col" data-drop="col" data-ck="${esc(c.ck)}" ${c.attrs}>
@@ -880,14 +885,14 @@ V.home=()=>{
 <div class="stat"><span class="v">${week}</span><span class="l">Próximos 7 días</span></div>
 <div class="stat ok"><span class="v">${doneW}</span><span class="l">Terminadas esta semana</span></div>
 </div>
-<div class="sec-h"><h2>Mis tareas</h2><span class="muted small">Arrastrá entre columnas, o soltá sobre el dock para pasarlas a otra persona o tablero.</span></div>
+<div class="sec-h"><h2>Mis tareas</h2><span class="muted small">Ordenadas por relevancia: primero lo vencido o que vence hoy, después Urgente y Alta, después lo que tiene fecha. Arrastrá entre columnas o al dock para pasarlas a otra persona o tablero.</span></div>
 <div class="board">${STATUS.map(s=>colHTML({ck:"home-"+s.k,st:s.k,title:s.n,attrs:`data-status="${s.k}" data-private="0"`,
-  tasks:sortCol(mine.filter(t=>t.status===s.k),s.k),limit:s.k==="done"?12:0,opts:{showAv:false},quick:s.k!=="done",
+  tasks:s.k==="done"?sortCol(mine.filter(t=>t.status===s.k),s.k):sortRel(mine.filter(t=>t.status===s.k)),limit:s.k==="done"?12:0,opts:{showAv:false},quick:s.k!=="done",
   empty:s.k==="done"?"Lo terminado aparece acá":"Arrastrá tareas acá"})).join("")}</div>
 <section class="privsec ${privHid?"hid":""}"><div class="sec-h"><h2>${ic("lock")}Tareas privadas</h2><span class="muted small">${privHid?`${privOpen} ${privOpen===1?"abierta":"abiertas"} · ocultas en esta pantalla`:"Solo las ven quien las creó y sus responsables. El resto del equipo no las ve en ninguna sección."}</span><span class="sp"></span>
 <button class="btn sm ghost" data-act="privHide" aria-pressed="${!privHid}" title="${privHid?"Mostrar":"Ocultar"} las tareas privadas en esta pantalla">${ic(privHid?"eye":"eyeoff")}${privHid?"Mostrar":"Ocultar"}</button></div>
 ${privHid?"":`<div class="board">${STATUS.map(s=>colHTML({ck:"priv-"+s.k,st:s.k,title:s.n,attrs:`data-status="${s.k}" data-private="1"`,
-  tasks:sortCol(privs.filter(t=>t.status===s.k),s.k),limit:s.k==="done"?12:0,opts:{showAv:false},quick:s.k!=="done",
+  tasks:s.k==="done"?sortCol(privs.filter(t=>t.status===s.k),s.k):sortRel(privs.filter(t=>t.status===s.k)),limit:s.k==="done"?12:0,opts:{showAv:false},quick:s.k!=="done",
   empty:s.k==="done"?"Lo terminado aparece acá":"Sin tareas privadas"})).join("")}</div>`}</section>`;
 };
 V.boards=()=>{
@@ -1693,7 +1698,7 @@ async function boot(){
   sb.auth.onAuthStateChange((ev,ses)=>{ if(ev==="SIGNED_OUT"){ S.session=null; showLogin(); } else if(ses) S.session=ses; });
   if(session) startSession(session); else showLogin();
   document.addEventListener("visibilitychange",()=>{ if(document.visibilityState==="visible"){ resync(); checkUpdate(true); } });
-  setInterval(()=>checkUpdate(false),5*60*1000); setTimeout(()=>checkUpdate(false),20000);
+  setInterval(()=>checkUpdate(false),5*60*1000); setInterval(()=>{ if(S.view==="home"&&!DRAG) render(); },30*60*1000); setTimeout(()=>checkUpdate(false),20000);
   addEventListener("online",()=>{ resync(); render(); }); addEventListener("offline",()=>render());
 }
 addEventListener("hashchange",()=>{ const m=location.hash.match(/^#tarea-([0-9a-f-]{36})$/); if(m&&S.session){ if(DATA().tasks[m[1]]) taskModal(m[1]); else toast("Esa tarea ya no existe."); } });
