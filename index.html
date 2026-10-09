@@ -5,6 +5,7 @@
 <meta name="apple-mobile-web-app-title" content="Gabinete">
 <meta name="theme-color" content="#1E2326">
 <link rel="manifest" href="manifest.webmanifest">
+<script>try{var gt=localStorage.getItem("gab.theme");if(gt==="light"||gt==="dark")document.documentElement.setAttribute("data-theme",gt)}catch(e){}</script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..100,500..800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
@@ -377,6 +378,37 @@ body.is-dragging .card:hover{border-color:var(--line)}
 @keyframes fade{from{opacity:0}to{opacity:1}}
 
 @media (max-width:1100px){.stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+/* proveedores / contratistas */
+.prov-chip{all:unset;cursor:pointer;display:inline-flex;align-items:center;gap:3px;font-family:var(--f-mono);font-size:11px;color:var(--ink2);padding:1px 5px;border-radius:5px;border:1px solid var(--line)}
+.prov-chip:hover{border-color:var(--accent);color:var(--accent)}
+.prov-chip .ic{width:13px;height:13px}
+.prov-chip.wait{border-color:var(--tape);background:var(--tapebg);color:var(--ink)}
+.plist{display:grid;gap:6px}
+.prow{display:flex;gap:10px;align-items:center;padding:8px 10px;border:1px solid var(--line2);border-radius:8px;background:var(--sheet)}
+.prow .pi{width:30px;height:30px;border-radius:8px;display:grid;place-items:center;background:var(--accentbg);color:var(--accent);flex:none}
+.prow .nm{flex:1;min-width:0;display:grid}
+.prow .nm b{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.prow .nm span{font-size:12px;color:var(--ink3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.prow a{color:var(--accent);text-decoration:none}
+.okbtn{all:unset;cursor:pointer;font-size:11.5px;font-weight:600;padding:3px 9px;border-radius:99px;border:1px solid var(--tape);background:var(--tapebg);color:var(--ink);white-space:nowrap}
+.okbtn[aria-pressed="true"]{border-color:var(--ok);background:var(--okbg);color:var(--ok)}
+.okbtn:disabled{cursor:default}
+.ppick{display:grid;gap:8px;border:1px dashed var(--line);border-radius:8px;padding:10px}
+.ppick .res{display:grid;gap:4px;max-height:220px;overflow:auto}
+.ppick .res button{all:unset;box-sizing:border-box;cursor:pointer;display:flex;gap:8px;align-items:center;padding:7px 9px;border-radius:6px;border:1px solid var(--line2);font-size:13px}
+.ppick .res button:hover,.ppick .res button:focus-visible{border-color:var(--accent);background:var(--accentbg)}
+.ppick .res button small{color:var(--ink3);font-size:12px}
+.ppick .res .new{border-style:dashed;color:var(--accent);font-weight:600}
+.cgrid{display:grid;gap:8px}
+.ccard{display:grid;gap:8px;padding:12px 14px;border:1px solid var(--line);border-radius:10px;background:var(--sheet)}
+.ccard .hd{display:flex;gap:10px;align-items:center}
+.ccard .ts{display:grid;gap:4px}
+.ccard .ts a{all:unset;cursor:pointer;display:flex;gap:8px;align-items:center;font-size:12.5px;padding:4px 6px;border-radius:6px}
+.ccard .ts a:hover{background:var(--line2)}
+.ccard .ts .sd{width:8px;height:8px;border-radius:50%;background:var(--stc);flex:none}
+.update-bar{position:fixed;left:50%;transform:translateX(-50%);top:calc(10px + env(safe-area-inset-top,0px));z-index:300;background:var(--ink);color:var(--sheet);border-radius:99px;padding:6px 8px 6px 16px;display:flex;gap:10px;align-items:center;font-size:13px;box-shadow:var(--lift)}
+.update-bar button{all:unset;cursor:pointer;background:var(--tape);color:var(--tapefg);font-weight:600;padding:5px 12px;border-radius:99px}
 @media (max-width:820px){
   :root{--colw:min(84vw,320px)}
   .app{grid-template-columns:1fr}
@@ -389,8 +421,8 @@ body.is-dragging .card:hover{border-color:var(--line)}
   .search{width:100%;order:5;height:38px}
   .view{padding:14px 16px 120px;gap:14px}
   .board{padding-inline:16px;margin-inline:-16px;scroll-padding-inline:16px;gap:10px;scroll-snap-type:x mandatory}
-  .tabbar{display:grid;grid-template-columns:repeat(5,1fr);position:fixed;left:0;right:0;bottom:0;z-index:40;background:var(--sheet);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px)}
-  .tabbar button{all:unset;display:grid;justify-items:center;gap:2px;padding:8px 2px 7px;font-size:10.5px;color:var(--ink3);cursor:pointer;position:relative}
+  .tabbar{display:grid;grid-template-columns:repeat(6,1fr);position:fixed;left:0;right:0;bottom:0;z-index:40;background:var(--sheet);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px)}
+  .tabbar button{all:unset;display:grid;justify-items:center;gap:2px;padding:8px 1px 7px;font-size:10px;white-space:nowrap;color:var(--ink3);cursor:pointer;position:relative}
   .tabbar button[aria-current="page"]{color:var(--accent);font-weight:600}
   .tabbar button[aria-current="page"]::before{content:"";position:absolute;top:0;left:30%;right:30%;height:3px;border-radius:0 0 3px 3px;background:var(--tape)}
   .tabbar .ic{width:22px;height:22px}
@@ -450,6 +482,7 @@ const APP_URL=location.origin+location.pathname.replace(/index\.html$/,"");
 const taskLink=id=>APP_URL+"#tarea-"+id;
 const okMail=v=>/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(v||"").trim());
 const ICON="apple-touch-icon.png";
+const APP_VERSION="2026-10-08.2";
 
 /* ---------- utilidades ---------- */
 const $=(s,r=document)=>r.querySelector(s), $$=(s,r=document)=>[...r.querySelectorAll(s)];
@@ -496,14 +529,21 @@ clock:'<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>',
 chev:'<path d="M9 6l6 6-6 6"/>', chevl:'<path d="M15 6l-6 6 6 6"/>',
 archive:'<rect x="3" y="4" width="18" height="5" rx="1"/><path d="M5 9v11h14V9M10 13h4"/>',
 star:'<path d="M12 3.5l2.6 5.3 5.9.9-4.2 4.1 1 5.8L12 16.9l-5.3 2.7 1-5.8-4.2-4.1 5.9-.9z"/>',
-user:'<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8"/>'
+user:'<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8"/>',
+hat:'<path d="M2.5 18.5h19"/><path d="M4.5 18.5V17a7.5 7.5 0 0 1 5-7.1V6.5h5v3.4a7.5 7.5 0 0 1 5 7.1v1.5"/><path d="M12 6.5v5"/>',
+phone:'<path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2"/>',
+sun:'<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
+moon:'<path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/>',
+auto:'<circle cx="12" cy="12" r="8.5"/><path d="M12 3.5v17A8.5 8.5 0 0 0 12 3.5z" fill="currentColor"/>',
+chat:'<path d="M4 20l1.3-3.9A8 8 0 1 1 8 19z"/><path d="M9 10.5c.5 2 2.5 4 4.5 4.5l1.2-1.2 1.8.8"/>',
+mail:'<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3.5 6.5l8.5 6 8.5-6"/>'
 };
 const ic=(k,c="")=>`<svg class="ic ${c}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${I[k]}</svg>`;
 
 /* ---------- estado ---------- */
 const now=new Date();
 const S={mode:"boot",db:null,user:null,uid:null,myName:"",meId:null,canWrite:true,
-  L:{members:{},projects:{},tasks:{},history:[]},D:null,got:{},
+  L:{members:{},projects:{},tasks:{},history:[],contacts:{}},D:null,got:{},
   view:"home",pid:null,q:"",fm:null,showArch:false,teamDone:false,
   cal:{y:now.getFullYear(),m:now.getMonth(),sel:TODAY(),mine:false,pid:""},
   hf:{who:"",proj:""},histOlder:[],histEnd:false,openTask:null,quickOpen:null,mcp:null,myEmail:"",hashTask:(location.hash.match(/^#tarea-([0-9a-f-]{36})$/)||[])[1]||null,session:null,isAdmin:false,dirty:false,justDragged:0};
@@ -516,7 +556,13 @@ const tasksL=f=>Object.values(DATA().tasks).filter(f).sort((a,b)=>(a.order||0)-(
 const pc=p=>`--pc:var(--c${((p&&p.color)||0)%NC})`;
 const pTeam=p=>((p&&p.team)||[]).filter(id=>DATA().members[id]);
 const mName=id=>(DATA().members[id]||{}).name||"";
-const qMatch=t=>{ if(!S.q) return true; const q=S.q.toLowerCase(); const p=DATA().projects[t.projectId]; return [t.title,t.notes,t.etapa,p&&p.name,p&&p.code,mName(t.assigneeId)].some(x=>String(x||"").toLowerCase().includes(q)); };
+const CT=()=>DATA().contacts||{};
+const provs=t=>(Array.isArray(t&&t.providers)?t.providers:[]).filter(x=>x&&CT()[x.c]);
+const contactsL=()=>Object.values(CT()).sort((a,b)=>String(a.name).localeCompare(String(b.name),"es"));
+const cLabel=c=>c.name+(c.rubro?" · "+c.rubro:"");
+const telHref=p=>"tel:"+String(p||"").replace(/[^\d+]/g,"");
+const waHref=p=>{ let d=String(p||"").replace(/\D/g,""); if(d.startsWith("0")) d="595"+d.slice(1); return "https://wa.me/"+d; };
+const qMatch=t=>{ if(!S.q) return true; const q=S.q.toLowerCase(); const p=DATA().projects[t.projectId]; return [t.title,t.notes,t.etapa,p&&p.name,p&&p.code,mName(t.assigneeId),...provs(t).map(x=>cLabel(CT()[x.c]))].some(x=>String(x||"").toLowerCase().includes(q)); };
 
 function dueInfo(t){ if(!t.due) return null; const d=dayDiff(t.due,TODAY());
   const c=t.status==="done"?"":d<0?"over":d===0?"today":"";
@@ -527,14 +573,15 @@ let sb=null;
 const KM={
   members:{name:"name",role:"role",color:"color",email:"email",isAdmin:"is_admin",order:"sort_order",uid:"user_id"},
   projects:{name:"name",kind:"kind",code:"code",client:"client",place:"place",color:"color",archived:"archived",order:"sort_order",team:"team",lead:"lead",createdBy:"created_by",createdAt:"created_at"},
-  tasks:{title:"title",notes:"notes",projectId:"project_id",assigneeId:"assignee_id",status:"status",prio:"prio",due:"due",etapa:"etapa",checklist:"checklist",order:"sort_order",createdBy:"created_by",createdAt:"created_at",updatedAt:"updated_at",doneAt:"done_at"}};
+  tasks:{title:"title",notes:"notes",projectId:"project_id",assigneeId:"assignee_id",status:"status",prio:"prio",due:"due",etapa:"etapa",checklist:"checklist",providers:"providers",order:"sort_order",createdBy:"created_by",createdAt:"created_at",updatedAt:"updated_at",doneAt:"done_at"},
+  contacts:{name:"name",rubro:"rubro",phone:"phone",email:"email",notes:"notes",createdBy:"created_by",createdAt:"created_at"}};
 const NULLABLE=new Set(["project_id","assignee_id","lead","created_by","user_id","due"]);
 const TSC=new Set(["done_at","updated_at","created_at"]);
 const EMPTYSTR=new Set(["projectId","assigneeId","lead","due","createdBy","uid"]);
 function toDb(coll,o){ const r={}; for(const [k,v] of Object.entries(o)){ const c=KM[coll][k]; if(!c) continue; let x=v;
   if(NULLABLE.has(c)&&(x===""||x===undefined)) x=null; if(TSC.has(c)) x=x?new Date(x).toISOString():null;
   if(c==="email"&&x) x=String(x).trim().toLowerCase(); r[c]=x; } return r; }
-function fromDb(coll,r){ const o={id:r.id}; for(const [k,c] of Object.entries(KM[coll])){ let v=r[c]; if(TSC.has(c)) v=v?Date.parse(v):null; if(v==null&&EMPTYSTR.has(k)) v=""; o[k]=v; } return o; }
+function fromDb(coll,r){ const o={id:r.id}; for(const [k,c] of Object.entries(KM[coll])){ let v=r[c]; if(c==="providers"&&!Array.isArray(v)) v=[]; if(TSC.has(c)) v=v?Date.parse(v):null; if(v==null&&EMPTYSTR.has(k)) v=""; o[k]=v; } return o; }
 function fromHist(r){ return {...(r.data||{}),id:r.id,ts:Date.parse(r.ts),actor:r.actor||"",actorName:r.actor_name||"",type:r.type,taskId:r.task_id||"",title:r.title||"",projectId:r.project_id||""}; }
 const chains={};
 function dbw(key,fn){ const p=(chains[key]||Promise.resolve()).then(async()=>{ const {error}=await fn(); if(error) throw error; }).catch(onErr); chains[key]=p; return p; }
@@ -558,9 +605,11 @@ function createTask(o){
   const id=rid(); const t={title:o.title.trim(),notes:o.notes||"",projectId:o.projectId||"",assigneeId:o.assigneeId??(S.meId||""),
     status:o.status||"todo",prio:+o.prio||0,due:o.due||"",etapa:o.etapa||"",checklist:[],order:Date.now(),
     createdBy:S.meId||"",createdAt:Date.now(),updatedAt:Date.now(),doneAt:o.status==="done"?Date.now():null};
+  if(o.providers&&o.providers.length) t.providers=o.providers;
   put("tasks",id,t);
   const p=DATA().projects[t.projectId];
   log("create",{taskId:id,title:t.title,projectId:t.projectId,pname:p?p.name:"",to:t.assigneeId,toName:mName(t.assigneeId)});
+  (t.providers||[]).forEach(x=>{ const c=CT()[x.c]; if(c) log("prov",{taskId:id,title:t.title,projectId:t.projectId,cname:c.name}); });
   if(t.assigneeId&&t.assigneeId!==S.meId) setTimeout(()=>offerNotify(id),400);
   return id;
 }
@@ -601,7 +650,7 @@ function mailContent(t){
   const D=DATA(), p=D.projects[t.projectId], m=D.members[t.assigneeId], by=mName(S.meId)||"Alguien del estudio";
   const board=p?(p.code?p.code+" · ":"")+p.name:"Sin tablero"; const due=t.due?longD(t.due):"Sin fecha"; const link=taskLink(t.id);
   const subject=`Tarea asignada: ${t.title} (${p?p.name:"Gabinete"})`;
-  const body=`Hola ${first(m&&m.name)},\n\n${by} te asignó una tarea en Gabinete, el sistema de tareas de Pérez Ramírez Arquitectura.\n\nTarea: ${t.title}\nTablero: ${board}\nEstado: ${SN[t.status]}\nVence: ${due}\nPrioridad: ${PRIO[t.prio||0]}${t.notes?"\nNotas: "+t.notes:""}\n\nAbrir la tarea: ${link}\nAbrir el sistema: ${APP_URL}\n\nEntrá con tu cuenta de Claude del estudio.`;
+  const body=`Hola ${first(m&&m.name)},\n\n${by} te asignó una tarea en Gabinete, el sistema de tareas de Pérez Ramírez Arquitectura.\n\nTarea: ${t.title}\nTablero: ${board}\nEstado: ${SN[t.status]}\nVence: ${due}\nPrioridad: ${PRIO[t.prio||0]}${t.notes?"\nNotas: "+t.notes:""}\n\nAbrir la tarea: ${link}\nAbrir el sistema: ${APP_URL}\n\nPara entrar escribí tu mail en la pantalla de ingreso y usá el código que te llega.`;
   const row=(k,v)=>`<tr><td style="padding:4px 14px 4px 0;color:#7C858A;font-size:13px;white-space:nowrap">${k}</td><td style="padding:4px 0;font-size:14px;color:#16191B">${esc(v)}</td></tr>`;
   const htmlBody=`<div style="font-family:Arial,Helvetica,sans-serif;max-width:560px;margin:0 auto;color:#16191B">
 <div style="background:#1E2326;color:#EEF0EE;padding:14px 20px;border-radius:10px 10px 0 0;font-size:13px;letter-spacing:.12em;text-transform:uppercase;font-weight:bold">Gabinete · Pérez Ramírez Arquitectura</div>
@@ -612,7 +661,7 @@ function mailContent(t){
 <table style="border-collapse:collapse;margin:0 0 18px">${row("Tablero",board)}${row("Estado",SN[t.status])}${row("Vence",due)}${row("Prioridad",PRIO[t.prio||0])}${t.notes?row("Notas",t.notes.slice(0,400)):""}</table>
 <a href="${link}" style="display:inline-block;background:#1F5E5B;color:#FFFFFF;text-decoration:none;padding:11px 18px;border-radius:7px;font-size:14px;font-weight:bold">Abrir la tarea</a>
 <span style="display:inline-block;width:10px"></span><a href="${APP_URL}" style="color:#1F5E5B;font-size:14px">Ir al sistema</a>
-<p style="margin:18px 0 0;font-size:12px;color:#7C858A">Entrá con tu cuenta de Claude del estudio. Funciona desde la computadora y el celular.</p></div></div>`;
+<p style="margin:18px 0 0;font-size:12px;color:#7C858A">Para entrar escribí tu mail y usá el código que te llega. Funciona desde la computadora y el celular.</p></div></div>`;
   return {subject,body,htmlBody};
 }
 async function sendNotify(id){
@@ -653,8 +702,93 @@ function cardHTML(t,o={}){ const D=DATA(), p=D.projects[t.projectId], m=D.member
   return `<article class="card ${done?"done":""}" data-drag="task" data-id="${esc(t.id)}" data-act="openTask" tabindex="0" aria-label="${esc(t.title)}">
 ${showP||t.etapa?`<div class="meta">${showP?projChip(p):""}${t.etapa?`<span class="tag">${esc(t.etapa)}</span>`:""}</div>`:""}
 <div class="ttl"><button class="chk ${done?"on":""}" data-act="toggle" data-id="${esc(t.id)}" aria-label="${done?"Marcar como pendiente":"Marcar como terminada"}" title="${done?"Reabrir":"Terminar"}">${ic("check")}</button><span class="t">${esc(t.title)}</span></div>
-<div class="foot">${di?`<span class="due ${di.c}">${ic("clock")}${esc(di.l)}</span>`:""}${t.prio?`<span class="prio p${t.prio}">${ic("flag")}${PRIO[t.prio]}</span>`:""}${cl.length?`<span class="cl ${cd===cl.length?"full":""}">${ic("list")}${cd}/${cl.length}</span>`:""}${t.notes?`<span class="dim" title="Tiene notas">${ic("note")}</span>`:""}<span class="sp"></span>${o.showAv===false?"":`<button class="avbtn who-tag ${m?"":"none"}" data-act="assignPick" data-id="${esc(t.id)}" aria-label="Responsable: ${m?esc(m.name):"sin asignar"}. Tocar para cambiar" title="Cambiar responsable">${avHTML(m)}<span class="an">${m?esc(first(m.name)):"Asignar"}</span></button>`}</div>
+<div class="foot">${di?`<span class="due ${di.c}">${ic("clock")}${esc(di.l)}</span>`:""}${t.prio?`<span class="prio p${t.prio}">${ic("flag")}${PRIO[t.prio]}</span>`:""}${cl.length?`<span class="cl ${cd===cl.length?"full":""}">${ic("list")}${cd}/${cl.length}</span>`:""}${t.notes?`<span class="dim" title="Tiene notas">${ic("note")}</span>`:""}${provChip(t)}<span class="sp"></span>${o.showAv===false?"":`<button class="avbtn who-tag ${m?"":"none"}" data-act="assignPick" data-id="${esc(t.id)}" aria-label="Responsable: ${m?esc(m.name):"sin asignar"}. Tocar para cambiar" title="Cambiar responsable">${avHTML(m)}<span class="an">${m?esc(first(m.name)):"Asignar"}</span></button>`}</div>
 </article>`; }
+/* ---------- proveedores / contratistas ---------- */
+function provChip(t){ const L=provs(t); if(!L.length) return ""; const wait=L.filter(x=>!x.ok).length;
+  return `<button class="prov-chip ${wait?"wait":""}" data-act="provList" data-id="${esc(t.id)}" title="Pedido a: ${esc(L.map(x=>CT()[x.c].name).join(", "))}" aria-label="Pedido a ${L.length} ${L.length===1?"proveedor":"proveedores"}${wait?`, ${wait} sin respuesta`:""}. Tocar para ver la lista">${ic("hat")}${L.length}</button>`; }
+function contactLinks(c){ return `${c.phone?`<a class="icon-btn" href="${esc(waHref(c.phone))}" target="_blank" rel="noopener" title="WhatsApp" aria-label="WhatsApp a ${esc(c.name)}">${ic("chat")}</a><a class="icon-btn" href="${esc(telHref(c.phone))}" title="Llamar" aria-label="Llamar a ${esc(c.name)}">${ic("phone")}</a>`:""}${okMail(c.email)?`<a class="icon-btn" href="mailto:${esc(c.email.trim())}" title="Escribir mail" aria-label="Mail a ${esc(c.name)}">${ic("mail")}</a>`:""}`; }
+function provRow(t,x,o={}){ const c=CT()[x.c]; const ro=!canEdit();
+  return `<div class="prow"><span class="pi">${ic("hat")}</span><div class="nm"><b>${esc(c.name)}</b><span>${esc([c.rubro,c.phone].filter(Boolean).join(" · ")||"Sin datos de contacto")}${x.at?` · pedido el ${esc(fmtD(ymd(new Date(x.at))))}`:""}</span></div>
+${contactLinks(c)}<button class="okbtn" data-act="provOk" data-id="${esc(t.id)}" data-c="${esc(x.c)}" aria-pressed="${!!x.ok}" title="${x.ok?"Marcar como pendiente de respuesta":"Marcar que ya respondió"}" ${ro?"disabled":""}>${x.ok?"Respondió":"Esperando"}</button>${o.rm&&!ro?`<button class="icon-btn" data-act="provRm" data-id="${esc(t.id)}" data-c="${esc(x.c)}" aria-label="Quitar a ${esc(c.name)} de esta tarea" title="Quitar">${ic("x")}</button>`:""}</div>`; }
+const provListHTML=(t,o)=>{ const L=provs(t); return L.length?L.map(x=>provRow(t,x,o)).join(""):`<p class="muted small" style="margin:0">Todavía no anotaste a quién se le pidió.</p>`; };
+function createContact(o){ const id=rid(); const c={name:o.name.trim(),rubro:(o.rubro||"").trim(),phone:(o.phone||"").trim(),email:(o.email||"").trim(),notes:(o.notes||"").trim(),createdBy:S.meId||"",createdAt:Date.now()};
+  put("contacts",id,c); log("cnew",{cname:c.name}); return id; }
+function addProv(tid,cid){ const t=DATA().tasks[tid], c=CT()[cid]; if(!t||!c) return; const cur=Array.isArray(t.providers)?t.providers:[]; if(cur.some(x=>x.c===cid)) return;
+  editTask(tid,{providers:[...cur,{c:cid,at:Date.now(),ok:false}]}); log("prov",{taskId:tid,title:t.title,projectId:t.projectId,cname:c.name}); }
+function provToggle(tid,cid){ const t=DATA().tasks[tid]; if(!t) return; const cur=(t.providers||[]); const x=cur.find(y=>y.c===cid); if(!x) return; const ok=!x.ok;
+  editTask(tid,{providers:cur.map(y=>y.c===cid?{...y,ok,okAt:ok?Date.now():null}:y)});
+  if(ok) log("provok",{taskId:tid,title:t.title,projectId:t.projectId,cname:(CT()[cid]||{}).name||""}); }
+function provRemove(tid,cid){ const t=DATA().tasks[tid]; if(!t) return; editTask(tid,{providers:(t.providers||[]).filter(y=>y.c!==cid)});
+  log("provrm",{taskId:tid,title:t.title,projectId:t.projectId,cname:(CT()[cid]||{}).name||""}); }
+/* buscador para elegir o crear proveedores (se usa en "Nueva tarea" y en el detalle de la tarea) */
+function mountPicker(host,{exclude,onPick}){
+  let open=false, mode="list", draft="";
+  const draw=()=>{
+    if(!host.isConnected) return;
+    if(S.noContacts){ host.innerHTML=`<p class="muted small" style="margin:0">La agenda de proveedores todavía no está activada.</p>`; return; }
+    if(!open){ host.innerHTML=`<button type="button" class="btn sm" data-pp="open">${ic("plus")}Agregar proveedor o contratista</button>`;
+      host.querySelector("[data-pp=open]").onclick=()=>{ open=true; draw(); host.querySelector("input")?.focus(); }; return; }
+    if(mode==="new"){
+      host.innerHTML=`<div class="ppick"><b class="small">Nuevo proveedor o contratista</b>
+<div class="g2"><label class="fld"><span>Nombre o empresa</span><input class="inp" data-pp="n" value="${esc(draft)}" required></label>
+<label class="fld"><span>Rubro</span><input class="inp" data-pp="r" placeholder="Ej. Herrería, Vidriería, Electricista"></label>
+<label class="fld"><span>Teléfono / WhatsApp</span><input class="inp" data-pp="p" inputmode="tel" placeholder="Ej. 0981 123 456"></label>
+<label class="fld"><span>Mail</span><input class="inp" data-pp="e" type="email" inputmode="email" placeholder="Opcional"></label></div>
+<div class="row"><span class="sp"></span><button type="button" class="btn ghost sm" data-pp="back">Volver</button><button type="button" class="btn pri sm" data-pp="save">Guardar y agregar</button></div></div>`;
+      const g=k=>host.querySelector(`[data-pp=${k}]`);
+      const save=()=>{ const name=g("n").value.trim(); if(!name){ g("n").focus(); return; }
+        const id=createContact({name,rubro:g("r").value,phone:g("p").value,email:g("e").value}); mode="list"; draft=""; onPick(id); draw(); host.querySelector("input")?.focus(); toast(name+" quedó en la agenda de proveedores"); };
+      g("save").onclick=save; g("back").onclick=()=>{ mode="list"; draw(); host.querySelector("input")?.focus(); };
+      host.querySelectorAll("input").forEach(i=>i.addEventListener("keydown",e=>{ if(e.key==="Enter"){ e.preventDefault(); save(); } }));
+      g(draft?"r":"n").focus(); return; }
+    host.innerHTML=`<div class="ppick"><div class="row"><input class="inp" data-pp="q" placeholder="Buscar o escribir un nombre nuevo" autocomplete="off" aria-label="Buscar proveedor o contratista" style="flex:1" value="${esc(draft)}"><button type="button" class="icon-btn" data-pp="close" aria-label="Cerrar buscador">${ic("x")}</button></div><div class="res"></div></div>`;
+    const q=host.querySelector("[data-pp=q]"), res=host.querySelector(".res");
+    const list=()=>{ draft=q.value; const v=q.value.trim().toLowerCase(); const ex=new Set(exclude());
+      const L=contactsL().filter(c=>!ex.has(c.id)&&(!v||[c.name,c.rubro,c.phone].some(x=>String(x||"").toLowerCase().includes(v)))).slice(0,v?40:6);
+      const exact=contactsL().some(c=>c.name.trim().toLowerCase()===v);
+      res.innerHTML=L.map(c=>`<button type="button" data-pc="${esc(c.id)}">${ic("hat")}<span style="flex:1;min-width:0">${esc(c.name)}${c.rubro?` <small>· ${esc(c.rubro)}</small>`:""}</span><small>${esc(c.phone||"")}</small></button>`).join("")
+        +(v&&!exact?`<button type="button" class="new" data-pnew>${ic("plus")}Agregar «${esc(q.value.trim())}» como nuevo</button>`:"")
+        +(!L.length&&!v?`<span class="muted small">${contactsL().length?"Ya están todos agregados. Escribí un nombre para crear otro.":"La agenda está vacía. Escribí un nombre para crear el primero."}</span>`:"")
+        +(!v&&L.length?`<span class="muted small">Escribí para buscar entre ${contactsL().length} o crear uno nuevo.</span>`:"");
+      res.querySelectorAll("[data-pc]").forEach(b=>b.onclick=()=>{ onPick(b.dataset.pc); q.value=""; list(); q.focus(); });
+      const n=res.querySelector("[data-pnew]"); if(n) n.onclick=()=>{ draft=q.value.trim(); mode="new"; draw(); }; };
+    q.addEventListener("input",list);
+    q.addEventListener("keydown",e=>{ if(e.key==="Enter"){ e.preventDefault(); res.querySelector("button")?.click(); } });
+    host.querySelector("[data-pp=close]").onclick=()=>{ open=false; draft=""; draw(); };
+    list(); };
+  draw(); return {redraw:draw};
+}
+function provListModal(id){
+  const t=DATA().tasks[id]; if(!t){ closeModal(); return; } S.provView=id;
+  modal(`<div class="sheet-h"><span style="color:var(--accent)">${ic("hat")}</span><h2>Pedido a</h2><span class="sp"></span><button class="icon-btn" data-act="close" aria-label="Cerrar">${ic("x")}</button></div>
+<div class="sheet-b"><p style="margin:0;font-weight:500">${esc(t.title)}</p>
+<div class="plist">${provListHTML(t,{rm:false})}</div>
+<div class="row"><span class="muted small">Tocá «Esperando» cuando te respondan.</span><span class="sp"></span><button class="btn sm" data-act="openTask" data-id="${esc(t.id)}">Abrir tarea</button></div></div>`,"narrow");
+}
+function refreshProvViews(){ if(S.openTask) refreshTask(); else if(S.provView) provListModal(S.provView); render(); }
+function contactModal(id){
+  const c=id?CT()[id]:{name:"",rubro:"",phone:"",email:"",notes:""}; if(id&&!c) return;
+  modal(`<div class="sheet-h"><h2>${id?"Editar proveedor":"Nuevo proveedor o contratista"}</h2><span class="sp"></span><button class="icon-btn" data-act="close" aria-label="Cerrar">${ic("x")}</button></div>
+<form class="sheet-b" id="ctForm">
+<div class="g2"><label class="fld"><span>Nombre o empresa</span><input class="inp" id="ct-name" value="${esc(c.name)}" required autofocus placeholder="Ej. Herrería Benítez"></label>
+<label class="fld"><span>Rubro</span><input class="inp" id="ct-rubro" value="${esc(c.rubro||"")}" placeholder="Ej. Herrería, Vidriería, Electricista"></label>
+<label class="fld"><span>Teléfono / WhatsApp</span><input class="inp" id="ct-phone" value="${esc(c.phone||"")}" inputmode="tel" placeholder="Ej. 0981 123 456"></label>
+<label class="fld"><span>Mail</span><input class="inp" type="email" id="ct-email" value="${esc(c.email||"")}" placeholder="Opcional"></label></div>
+<label class="fld"><span>Notas</span><textarea class="inp" id="ct-notes" rows="3" placeholder="Contacto, dirección, observaciones…">${esc(c.notes||"")}</textarea></label>
+<div class="row">${id?`<span id="ctDel"><button type="button" class="btn ghost sm danger" data-act="ctDelAsk">${ic("trash")}Quitar de la agenda</button></span>`:""}<span class="sp"></span><button type="button" class="btn ghost" data-act="close">Cancelar</button><button class="btn pri" type="submit">${id?"Guardar":`${ic("plus")}Agregar`}</button></div>
+</form>`,"narrow");
+  S.ctEdit=id||null;
+  $("#ctForm").addEventListener("submit",e=>{ e.preventDefault(); const name=$("#ct-name").value.trim(); if(!name) return $("#ct-name").focus();
+    const o={name,rubro:$("#ct-rubro").value.trim(),phone:$("#ct-phone").value.trim(),email:$("#ct-email").value.trim(),notes:$("#ct-notes").value.trim()};
+    if(o.email&&!okMail(o.email)){ toast("Revisá el mail: parece incompleto."); $("#ct-email").focus(); return; }
+    if(id){ patch("contacts",id,o); log("cedit",{cname:name}); toast("Proveedor guardado"); } else { createContact(o); toast(name+" quedó en la agenda"); }
+    closeModal(); });
+}
+function deleteContact(id){ const c=CT()[id]; if(!c) return;
+  tasksL(t=>(t.providers||[]).some(x=>x.c===id)).forEach(t=>patch("tasks",t.id,{providers:t.providers.filter(x=>x.c!==id)}));
+  del("contacts",id); log("cdel",{cname:c.name}); toast(c.name+" se quitó de la agenda"); }
+
 function sortCol(list,k){ return k==="done"?list.slice().sort((a,b)=>(b.doneAt||0)-(a.doneAt||0)):list; }
 function colHTML(c){ const all=c.tasks; const shown=c.limit?all.slice(0,c.limit):all;
   return `<section class="col" data-drop="col" data-ck="${esc(c.ck)}" ${c.attrs}>
@@ -785,6 +919,12 @@ function hSentence(e){ const D=DATA(); const who=`<b>${esc(mName(e.actor)||e.act
     case "porder": return ["move","Tableros",`${who} reordenó los tableros (${esc(e.pname||"")})`];
     case "pteam": return ["move","Designación",`${who} designó ${e.count||0} ${e.count===1?"persona":"personas"} en <b>${esc(e.pname||pn(e.projectId))}</b>${e.lead?` con ${esc(mName(e.lead)||e.leadName)} como responsable`:""}`];
     case "notify": return ["","Aviso",`${who} avisó por mail a <b>${esc(mName(e.to)||e.toName||"")}</b> sobre ${tt}`];
+    case "prov": return ["","Pedido",`${who} anotó que ${tt} se le pidió a <b>${esc(e.cname||"")}</b>`];
+    case "provok": return ["done","Respuesta",`${who} marcó que <b>${esc(e.cname||"")}</b> respondió sobre ${tt}`];
+    case "provrm": return ["","Pedido",`${who} quitó a <b>${esc(e.cname||"")}</b> de ${tt}`];
+    case "cnew": return ["new","Proveedores",`${who} agregó a <b>${esc(e.cname||"")}</b> a la agenda de proveedores`];
+    case "cedit": return ["","Proveedores",`${who} editó los datos de <b>${esc(e.cname||"")}</b>`];
+    case "cdel": return ["del","Proveedores",`${who} quitó a <b>${esc(e.cname||"")}</b> de la agenda de proveedores`];
     case "join": return ["new","Equipo",`${who} se sumó al equipo`];
     case "member": return ["","Equipo",`${who} ${esc(e.what||"actualizó el equipo")}`];
     default: return ["","",`${who} hizo un cambio`];
@@ -803,7 +943,26 @@ ${L.length?Object.keys(groups).map(k=>`<section class="hgroup"><h3>${esc(lab(k))
 :`<div class="empty"><h2>Sin movimientos todavía</h2><p>Cada tarea creada, movida, asignada o terminada queda registrada acá con quién lo hizo y cuándo.</p></div>`}
 ${live()&&!S.histEnd&&all.length>=300?`<div class="row" style="justify-content:center"><button class="btn" data-act="histMore">Cargar movimientos anteriores</button></div>`:""}`;
 };
-const TITLES={home:"Mis tareas",boards:"Tableros",team:"Equipo",cal:"Calendario",hist:"Historial"};
+V.prov=()=>{
+  if(S.noContacts) return `<div class="empty"><h2>Agenda de proveedores en preparación</h2><p>Esta sección se activa en cuanto el administrador termina la actualización. Tus tareas no se ven afectadas.</p></div>`;
+  const q=S.q.toLowerCase(); const all=contactsL();
+  const L=all.filter(c=>!q||[c.name,c.rubro,c.phone,c.email,c.notes].some(x=>String(x||"").toLowerCase().includes(q)));
+  const D=DATA();
+  const card=c=>{ const ts=tasksL(t=>(t.providers||[]).some(x=>x.c===c.id)); const open=ts.filter(t=>t.status!=="done");
+    const wait=open.filter(t=>!(t.providers.find(x=>x.c===c.id)||{}).ok).length;
+    return `<article class="ccard"><div class="hd"><span class="pi" style="width:34px;height:34px;border-radius:9px;display:grid;place-items:center;background:var(--accentbg);color:var(--accent);flex:none">${ic("hat")}</span>
+<div style="display:grid;min-width:0;flex:1"><b style="overflow-wrap:anywhere">${esc(c.name)}</b><span class="muted small">${esc([c.rubro,c.phone].filter(Boolean).join(" · ")||"Sin datos de contacto")}</span></div>
+${contactLinks(c)}<button class="icon-btn" data-act="ctEdit" data-cid="${esc(c.id)}" aria-label="Editar ${esc(c.name)}" title="Editar">${ic("edit")}</button></div>
+${c.notes?`<p class="muted small" style="margin:0;white-space:pre-line">${esc(c.notes)}</p>`:""}
+${open.length?`<div class="ts"><span class="eyebrow">${open.length} ${open.length===1?"pedido abierto":"pedidos abiertos"}${wait?` · ${wait} sin respuesta`:""}</span>${open.map(t=>{const x=t.providers.find(y=>y.c===c.id)||{}; const p=D.projects[t.projectId];
+  return `<a data-act="openTask" data-id="${esc(t.id)}" tabindex="0"><i class="sd" style="--stc:var(--st-${t.status})"></i><span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(t.title)}${p?` <span class="muted">· ${esc(p.name)}</span>`:""}</span><span class="pill" style="${x.ok?"background:var(--okbg);color:var(--ok)":"background:var(--tapebg);color:var(--ink)"}">${x.ok?"Respondió":"Esperando"}</span></a>`}).join("")}</div>`:`<span class="muted small">Sin pedidos abiertos${ts.length?` · ${ts.length} ${ts.length===1?"terminado":"terminados"}`:""}</span>`}
+</article>`; };
+  return `<div class="sec-h"><span class="muted small">Agenda compartida del estudio: personas y empresas externas a las que les pedimos presupuestos, materiales o trabajos. Cualquiera del equipo puede agregar o editar.</span><span class="sp"></span><button class="btn pri sm" data-act="ctNew">${ic("plus")}Nuevo proveedor</button></div>
+${L.length?`<div class="cgrid" style="grid-template-columns:repeat(auto-fill,minmax(min(100%,340px),1fr))">${L.map(card).join("")}</div>`
+:all.length?`<div class="empty"><h2>Sin resultados</h2><p>Ningún proveedor coincide con «${esc(S.q)}».</p></div>`
+:`<div class="empty"><h2>La agenda está vacía</h2><p>Cargá a los proveedores y contratistas con los que trabaja el estudio. También podés crearlos directamente desde una tarea, en «Pedido a».</p><button class="btn pri" data-act="ctNew">${ic("plus")}Agregar el primero</button></div>`}`;
+};
+const TITLES={home:"Mis tareas",boards:"Tableros",team:"Equipo",cal:"Calendario",hist:"Historial",prov:"Proveedores"};
 
 /* ---------- render ---------- */
 function render(){
@@ -824,7 +983,7 @@ function renderSide(){
   const D=DATA(), me=D.members[S.meId];
   const open=id=>tasksL(t=>t.projectId===id&&t.status!=="done").length;
   const mine=tasksL(t=>t.assigneeId===S.meId&&t.status!=="done").length;
-  const nav=[["home","home","Mis tareas",mine],["team","team","Equipo",""],["cal","cal","Calendario",""],["hist","hist","Historial",""]];
+  const nav=[["home","home","Mis tareas",mine],["team","team","Equipo",""],["cal","cal","Calendario",""],["prov","hat","Proveedores",""],["hist","hist","Historial",""]];
   const ps=projectsL();
   const grp=(kind,lab)=>{ const L=ps.filter(p=>(p.kind||"obra")===kind); return `<div class="side-sec"><div class="side-h"><span>${lab}</span>${canEdit()?`<button data-act="newProj" data-kind="${kind}" aria-label="Nuevo tablero de ${lab.toLowerCase()}" title="Nuevo tablero">${ic("plus")}</button>`:""}</div>
 ${L.map(p=>`<div class="pitem" data-act="openProj" data-pid="${esc(p.id)}" data-drag="project" data-proj="${esc(p.id)}" data-drop="set" data-project="${esc(p.id)}" ${S.view==="project"&&S.pid===p.id?'aria-current="page"':""} tabindex="0" role="button"><i class="sw" style="${pc(p)}"></i><span class="nm">${esc(p.name)}</span><span class="k">${open(p.id)||""}</span></div>`).join("")||`<div class="side-empty">Sin tableros</div>`}</div>`; };
@@ -847,7 +1006,7 @@ function renderTopTitle(){
   document.querySelector(".top h1").style.visibility=S.view==="project"&&innerWidth>820?"hidden":"visible";
 }
 function renderTabbar(){
-  const tabs=[["home","home","Mis tareas"],["boards","boards","Tableros"],["team","team","Equipo"],["cal","cal","Calendario"],["hist","hist","Historial"]];
+  const tabs=[["home","home","Mis tareas"],["boards","boards","Tableros"],["team","team","Equipo"],["cal","cal","Calendario"],["prov","hat","Proveed."],["hist","hist","Historial"]];
   const cur=S.view==="project"?"boards":S.view;
   $("#tabbar").innerHTML=tabs.map(([k,i,l])=>`<button data-act="nav" data-view="${k}" ${cur===k?'aria-current="page"':""}>${ic(i)}<span>${l}</span></button>`).join("");
 }
@@ -871,7 +1030,7 @@ function quickAdd(col){
 
 /* ---------- modales ---------- */
 function modal(html,cls=""){ $("#layer").innerHTML=`<div class="scrim" data-act="scrim"><div class="sheet ${cls}" role="dialog" aria-modal="true">${html}</div></div>`; const f=$("#layer [autofocus]"); if(f) setTimeout(()=>f.focus(),30); }
-function closeModal(){ $("#layer").innerHTML=""; S.openTask=null; render(); }
+function closeModal(){ $("#layer").innerHTML=""; S.openTask=null; S.provView=null; S.ctEdit=null; render(); }
 const opt=(v,l,sel)=>`<option value="${esc(v)}" ${sel?"selected":""}>${esc(l)}</option>`;
 const projOpts=sel=>opt("","Sin tablero",!sel)+["obra","proyecto"].map(k=>`<optgroup label="${k==="obra"?"Obras":"Proyectos"}">${projectsL(true).filter(p=>(p.kind||"obra")===k).map(p=>opt(p.id,(p.code?p.code+" · ":"")+p.name,p.id===sel)).join("")}</optgroup>`).join("");
 const memOpts=(sel,pid)=>{ const p=DATA().projects[pid]; const tm=p?[...new Set([p.lead,...pTeam(p)].filter(Boolean))]:[]; const lab=m=>m.name+(m.id===S.meId?" (vos)":"")+(p&&m.id===p.lead?" · responsable":"");
@@ -895,6 +1054,8 @@ ${p?projChip(p):`<span class="muted small">Sin tablero</span>`}<span class="sp">
 <label class="fld"><span>Prioridad</span><select class="inp" id="f-prio" data-f="prio" ${dis}>${PRIO.map((l,i)=>opt(i,l,(t.prio||0)===i)).join("")}</select></label>
 </div>
 ${!ro&&D.members[t.assigneeId]?`<div class="mailrow">${ic("note")}<span>${D.members[t.assigneeId].email?`Avisar a ${esc(first(D.members[t.assigneeId].name))} (<span class="addr">${esc(D.members[t.assigneeId].email)}</span>)`:`${esc(first(D.members[t.assigneeId].name))} no tiene mail cargado`}</span><span class="sp"></span>${D.members[t.assigneeId].email?`<button class="btn sm" data-act="notifySend" data-id="${esc(t.id)}">Enviar aviso por mail</button>`:`<button class="btn ghost sm" data-act="memEdit" data-mid="${esc(t.assigneeId)}">Cargar mail</button>`}</div>`:""}
+<div class="fld"><span>Pedido a (proveedores o contratistas)${provs(t).length?` <span class="mono muted">${provs(t).filter(x=>x.ok).length}/${provs(t).length} respondieron</span>`:""}</span>
+<div class="plist" id="tp-list">${provListHTML(t,{rm:true})}</div>${ro?"":`<div id="tp-pick"></div>`}</div>
 <label class="fld"><span>Etapa</span><select class="inp" id="f-etapa" data-f="etapa" ${dis}>${opt("","—",!t.etapa)}${ETAPAS.map(e=>opt(e,e,t.etapa===e)).join("")}</select></label>
 <label class="fld"><span>Notas</span><textarea class="inp" id="f-notes" data-f="notes" rows="4" placeholder="Detalles, medidas, links a planos, observaciones…" ${dis}>${esc(t.notes||"")}</textarea></label>
 <div class="fld"><span>Checklist ${cl.length?`<span class="mono muted">${cl.filter(x=>x.d).length}/${cl.length}</span>`:""}</span>
@@ -906,6 +1067,8 @@ ${acts.length?`<div class="fld"><span>Movimientos de esta tarea</span><div class
   const ta=$("#f-title"); const fit=()=>{ta.style.height="auto";ta.style.height=ta.scrollHeight+"px"}; fit(); ta.addEventListener("input",fit);
   ta.addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();ta.blur()}});
   const ci=$("#f-ci"); if(ci) ci.addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();ciAdd()}});
+  const pk=$("#tp-pick"); if(pk) mountPicker(pk,{exclude:()=>((DATA().tasks[id]||{}).providers||[]).map(x=>x.c),
+    onPick:cid=>{ addProv(id,cid); const tl=$("#tp-list"); if(tl) tl.innerHTML=provListHTML(DATA().tasks[id],{rm:true}); render(); }});
 }
 function refreshTask(){ const sc=$(".sheet")?.scrollTop; if(S.openTask){ taskModal(S.openTask); const s=$(".sheet"); if(s&&sc) s.scrollTop=sc; } }
 function ciAdd(){ const el=$("#f-ci"); const v=(el&&el.value||"").trim(); if(!v) return; const t=DATA().tasks[S.openTask]; editTask(t.id,{checklist:[...(t.checklist||[]),{id:rid(),t:v,d:false}]}); refreshTask(); $("#f-ci")?.focus(); render(); }
@@ -922,13 +1085,19 @@ function newTaskModal(pre={}){
 <label class="fld"><span>Estado</span><select class="inp" id="nt-st">${STATUS.filter(s=>s.k!=="done").map(s=>opt(s.k,s.n,s.k==="todo")).join("")}</select></label>
 <label class="fld"><span>Prioridad</span><select class="inp" id="nt-prio">${PRIO.map((l,i)=>opt(i,l,!i)).join("")}</select></label>
 <label class="fld"><span>Etapa</span><select class="inp" id="nt-etapa">${opt("","—",1)}${ETAPAS.map(e=>opt(e,e)).join("")}</select></label></div>
+<div class="fld"><span>Pedido a (proveedores o contratistas) <span class="muted" style="font-weight:400">opcional</span></span><div class="plist" id="nt-plist"></div><div id="nt-pick"></div></div>
 <div class="row"><span class="sp"></span><button type="button" class="btn ghost" data-act="close">Cancelar</button><button class="btn pri" type="submit">${ic("plus")}Crear tarea</button></div>
 </form>`,"");
   $("#nt-proj").addEventListener("change",e=>{ const a=$("#nt-asg"); const v=a.value; a.innerHTML=memOpts(v,e.target.value); });
   const ta=$("#nt-title"); ta.addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();$("#ntForm").requestSubmit()}});
+  const sel=[];
+  const drawSel=()=>{ $("#nt-plist").innerHTML=sel.filter(c=>CT()[c]).map(c=>{const k=CT()[c]; return `<div class="prow"><span class="pi">${ic("hat")}</span><div class="nm"><b>${esc(k.name)}</b><span>${esc([k.rubro,k.phone].filter(Boolean).join(" · ")||"Sin datos de contacto")}</span></div><button type="button" class="icon-btn" data-ntrm="${esc(c)}" aria-label="Quitar a ${esc(k.name)}">${ic("x")}</button></div>`}).join("");
+    $$("[data-ntrm]").forEach(b=>b.onclick=()=>{ sel.splice(sel.indexOf(b.dataset.ntrm),1); drawSel(); picker.redraw(); }); };
+  const picker=mountPicker($("#nt-pick"),{exclude:()=>sel,onPick:cid=>{ if(!sel.includes(cid)) sel.push(cid); drawSel(); }});
   $("#ntForm").addEventListener("submit",e=>{ e.preventDefault(); const title=$("#nt-title").value.trim(); if(!title){$("#nt-title").focus();return}
     const projectId=$("#nt-proj").value; S.lastPid=projectId||S.lastPid;
-    createTask({title,projectId,assigneeId:$("#nt-asg").value,due:$("#nt-due").value,status:$("#nt-st").value,prio:$("#nt-prio").value,etapa:$("#nt-etapa").value});
+    createTask({title,projectId,assigneeId:$("#nt-asg").value,due:$("#nt-due").value,status:$("#nt-st").value,prio:$("#nt-prio").value,etapa:$("#nt-etapa").value,
+      providers:sel.filter(c=>CT()[c]).map(c=>({c,at:Date.now(),ok:false}))});
     closeModal(); toast("Tarea creada"); });
 }
 
@@ -1019,8 +1188,16 @@ function profileModal(){
   const me=DATA().members[S.meId];
   modal(`<div class="sheet-h"><h2>Mi cuenta</h2><span class="sp"></span><button class="icon-btn" data-act="close" aria-label="Cerrar">${ic("x")}</button></div>
 <div class="sheet-b"><div class="row">${avHTML(me,"lg")}<div style="display:grid"><b>${esc(me?me.name:"")}</b><span class="muted small">${esc(S.myEmail||"")}${S.isAdmin?" · Administrador":""}</span></div></div>
-<div class="row"><button class="btn" data-act="memEdit" data-mid="${esc(S.meId||"")}">${ic("edit")}Editar mis datos</button><span class="sp"></span><button class="btn danger" data-act="signOut">Cerrar sesión</button></div></div>`,"narrow");
+<div class="fld"><span>Apariencia en este dispositivo</span><div class="seg" role="group" aria-label="Apariencia">${[["auto","auto","Automática"],["light","sun","Clara"],["dark","moon","Oscura"]].map(([k,i,l])=>`<button data-act="theme" data-t="${k}" aria-pressed="${curTheme()===k}">${ic(i)}${l}</button>`).join("")}</div>
+<span class="muted small" style="font-weight:400">Automática sigue el modo claro u oscuro del celular o la computadora.</span></div>
+<div class="row"><button class="btn" data-act="memEdit" data-mid="${esc(S.meId||"")}">${ic("edit")}Editar mis datos</button><span class="sp"></span><button class="btn danger" data-act="signOut">Cerrar sesión</button></div>
+<p class="muted small" style="margin:0">Versión ${esc(APP_VERSION)}</p></div>`,"narrow");
 }
+const curTheme=()=>{ const t=ls.get("gab.theme"); return t==="light"||t==="dark"?t:"auto"; };
+function setTheme(k){ const r=document.documentElement;
+  if(k==="light"||k==="dark"){ ls.set("gab.theme",k); r.setAttribute("data-theme",k); } else { ls.set("gab.theme","auto"); r.removeAttribute("data-theme"); }
+  const dark=k==="dark"||(k!=="light"&&matchMedia("(prefers-color-scheme: dark)").matches);
+  $('meta[name="theme-color"]')?.setAttribute("content",dark?"#0A0C0D":"#1E2326"); }
 
 /* ---------- clicks ---------- */
 document.addEventListener("click",e=>{
@@ -1029,7 +1206,7 @@ document.addEventListener("click",e=>{
   switch(act){
     case "nav": go(ds.view); break;
     case "openProj": S.lastPid=ds.pid; go("project",ds.pid); break;
-    case "openTask": taskModal(ds.id); break;
+    case "openTask": S.provView=null; taskModal(ds.id); break;
     case "toggle": { e.stopPropagation(); const t=DATA().tasks[ds.id]; if(!t) break; moveTask(ds.id,{status:t.status==="done"?"todo":"done"}); render(); if(S.openTask) refreshTask(); break; }
     case "quick": openQuick(a.closest(".col")); break;
     case "quickAdd": quickAdd(a.closest(".col")); break;
@@ -1055,6 +1232,17 @@ document.addEventListener("click",e=>{
       $("#memConfirm").innerHTML=`<div class="confirm"><span>¿Quitar a ${esc(m.name)}? ${n?`Sus ${n} tareas abiertas quedan sin responsable.`:""}</span><span class="sp"></span><button class="btn sm" data-act="manageTeam">No</button><button class="btn sm danger" data-act="memDelYes" data-mid="${esc(ds.mid)}">Quitar</button></div>`; break; }
     case "memDelYes": { const m=DATA().members[ds.mid]; tasksL(t=>t.assigneeId===ds.mid).forEach(t=>patch("tasks",t.id,{assigneeId:""})); Object.values(DATA().projects).filter(p=>(p.team||[]).includes(ds.mid)||p.lead===ds.mid).forEach(p=>patch("projects",p.id,{team:(p.team||[]).filter(x=>x!==ds.mid),lead:p.lead===ds.mid?"":p.lead})); del("members",ds.mid); log("member",{what:`quitó a ${m.name} del equipo`}); if(S.meId===ds.mid) S.meId=null; render(); teamModal(); break; }
     case "whoami": profileModal(); break;
+    case "theme": setTheme(ds.t); profileModal(); break;
+    case "provList": e.stopPropagation(); provListModal(ds.id); break;
+    case "provOk": e.stopPropagation(); if(!canEdit()) break; provToggle(ds.id,ds.c); refreshProvViews(); break;
+    case "provRm": provRemove(ds.id,ds.c); refreshProvViews(); break;
+    case "ctNew": contactModal(null); break;
+    case "ctEdit": contactModal(ds.cid); break;
+    case "ctDelAsk": { const n=tasksL(t=>t.status!=="done"&&(t.providers||[]).some(x=>x.c===S.ctEdit)).length;
+      $("#ctDel").innerHTML=`<span class="confirm">¿Quitar de la agenda?${n?` Se borra de ${n} ${n===1?"tarea abierta":"tareas abiertas"}.`:""} <button type="button" class="btn sm" data-act="ctDelNo">No</button><button type="button" class="btn sm danger" data-act="ctDelYes">Quitar</button></span>`; break; }
+    case "ctDelNo": contactModal(S.ctEdit); break;
+    case "ctDelYes": { const id=S.ctEdit; S.ctEdit=null; $("#layer").innerHTML=""; deleteContact(id); render(); break; }
+    case "reload": hardReload(); break;
     case "signOut": sb.auth.signOut().then(()=>location.replace(APP_URL)); break;
     case "calNav": { let {y,m}=S.cal; m+=+ds.d; if(m<0){m=11;y--} if(m>11){m=0;y++} S.cal.y=y;S.cal.m=m; render(); break; }
     case "calToday": { const n=new Date(); S.cal.y=n.getFullYear(); S.cal.m=n.getMonth(); S.cal.sel=TODAY(); render(); break; }
@@ -1214,6 +1402,10 @@ async function loadAll(){
   S.L.projects=Object.fromEntries(p.data.map(r=>[r.id,fromDb("projects",r)]));
   S.L.tasks=Object.fromEntries(t.data.map(r=>[r.id,fromDb("tasks",r)]));
   S.L.history=h.data.map(fromHist);
+  // Agenda de proveedores: si la tabla todavía no existe, el resto del sistema sigue funcionando igual
+  const c=await sb.from("contacts").select("*");
+  if(c.error){ console.warn(c.error); S.noContacts=true; S.L.contacts={}; }
+  else { S.noContacts=false; S.L.contacts=Object.fromEntries(c.data.map(r=>[r.id,fromDb("contacts",r)])); }
   return true;
 }
 let rT=0; function scheduleRender(){ cancelAnimationFrame(rT); rT=requestAnimationFrame(()=>render()); }
@@ -1229,6 +1421,7 @@ function subscribe(){
     .on("postgres_changes",{event:"*",schema:"public",table:"tasks"},p=>applyChange("tasks",p))
     .on("postgres_changes",{event:"*",schema:"public",table:"projects"},p=>applyChange("projects",p))
     .on("postgres_changes",{event:"*",schema:"public",table:"members"},p=>applyChange("members",p))
+    .on("postgres_changes",{event:"*",schema:"public",table:"contacts"},p=>applyChange("contacts",p))
     .on("postgres_changes",{event:"INSERT",schema:"public",table:"history"},p=>{ const e=fromHist(p.new); const i=S.L.history.findIndex(x=>x.cid&&x.cid===e.cid); if(i>=0) S.L.history[i]=e; else S.L.history.unshift(e); if(S.view==="hist") scheduleRender(); })
     .subscribe();
 }
@@ -1252,6 +1445,22 @@ async function loadOlder(){
   if(error) return onErr(error);
   const more=data.map(fromHist); S.histOlder.push(...more); if(more.length<300) S.histEnd=true; render();
 }
+/* ---------- actualizaciones automáticas ----------
+   Cuando se publica una versión nueva, cada dispositivo la detecta solo. Si la persona vuelve a abrir
+   la app (y no está editando nada) se recarga sola; si la está usando, aparece un aviso para actualizar.
+   Los datos viven en la base, así que recargar nunca borra nada. */
+let updFound=false;
+async function checkUpdate(onReturn){
+  if(!navigator.onLine) return;
+  try{ const r=await fetch(APP_URL+"index.html?v="+Date.now(),{cache:"no-store"}); if(!r.ok) return;
+    const m=(await r.text()).match(/const APP_VERSION="([^"]+)"/); if(!m||m[1]===APP_VERSION) return; updFound=true;
+  }catch(_){ return; }
+  const busy=DRAG||$("#layer").innerHTML||S.quickOpen||(document.activeElement&&document.activeElement.matches("input,textarea,select"));
+  if(onReturn&&!busy) return hardReload();
+  if(!$("#updBar")){ const d=document.createElement("div"); d.id="updBar"; d.className="update-bar"; d.setAttribute("role","status");
+    d.innerHTML=`<span>Hay una versión nueva de Gabinete</span><button data-act="reload">Actualizar</button>`; document.body.appendChild(d); }
+}
+async function hardReload(){ try{ await Promise.all([fetch(APP_URL,{cache:"reload"}),fetch(APP_URL+"index.html",{cache:"reload"})]); }catch(_){} location.reload(); }
 async function boot(){
   $("#loginLogo").src=LOGO;
   if(!window.supabase){ loginBody(`<p>No se pudo cargar el sistema. Revisá la conexión a internet y recargá la página.</p>`); return; }
@@ -1259,7 +1468,8 @@ async function boot(){
   const {data:{session}}=await sb.auth.getSession();
   sb.auth.onAuthStateChange((ev,ses)=>{ if(ev==="SIGNED_OUT"){ S.session=null; showLogin(); } else if(ses) S.session=ses; });
   if(session) startSession(session); else showLogin();
-  document.addEventListener("visibilitychange",()=>{ if(document.visibilityState==="visible") resync(); });
+  document.addEventListener("visibilitychange",()=>{ if(document.visibilityState==="visible"){ resync(); checkUpdate(true); } });
+  setInterval(()=>checkUpdate(false),5*60*1000); setTimeout(()=>checkUpdate(false),20000);
   addEventListener("online",()=>{ resync(); render(); }); addEventListener("offline",()=>render());
 }
 addEventListener("hashchange",()=>{ const m=location.hash.match(/^#tarea-([0-9a-f-]{36})$/); if(m&&S.session){ if(DATA().tasks[m[1]]) taskModal(m[1]); else toast("Esa tarea ya no existe."); } });
