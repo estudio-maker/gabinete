@@ -215,6 +215,11 @@ body.is-dragging .card:hover{border-color:var(--line)}
 .stat .v{font-family:var(--f-mono);font-size:24px;font-weight:500;font-variant-numeric:tabular-nums;line-height:1.1}
 .stat .l{font-size:12px;color:var(--ink2)}
 .stat.bad .v{color:var(--bad)} .stat.warn .v{color:var(--warn)} .stat.ok .v{color:var(--ok)}
+button.stat{font:inherit;color:inherit;text-align:left;cursor:pointer;transition:border-color .12s,box-shadow .12s}
+button.stat:hover{border-color:var(--ink3)}
+button.stat[aria-pressed="true"]{border-color:var(--accent);box-shadow:0 0 0 3px var(--accentbg)}
+.hfsec{display:grid;gap:10px;scroll-margin-top:70px}
+.hflist{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:8px;align-items:start}
 
 .sec-h{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .sec-h .sp{flex:1}
@@ -436,6 +441,14 @@ body.is-dragging .card:hover{border-color:var(--line)}
 .ppick .res button:hover,.ppick .res button:focus-visible{border-color:var(--accent);background:var(--accentbg)}
 .ppick .res button small{color:var(--ink3);font-size:12px}
 .ppick .res .new{border-style:dashed;color:var(--accent);font-weight:600}
+.imp{display:grid;gap:8px}
+.imp .row{gap:6px}
+.imphelp{background:var(--accentbg);border-radius:8px;padding:10px 12px;line-height:1.5}
+.implist{display:grid;gap:6px}
+.implist .res{display:grid;gap:4px;max-height:240px;overflow:auto}
+.implist .res button{all:unset;box-sizing:border-box;cursor:pointer;display:flex;gap:8px;align-items:center;padding:7px 9px;border-radius:6px;border:1px solid var(--line2);font-size:13px}
+.implist .res button:hover,.implist .res button:focus-visible{border-color:var(--accent);background:var(--accentbg)}
+.implist .res button small{color:var(--ink3);font-size:12px}
 .cgrid{display:grid;gap:8px}
 .ccard{display:grid;gap:8px;padding:12px 14px;border:1px solid var(--line);border-radius:10px;background:var(--sheet)}
 .ccard .hd{display:flex;gap:10px;align-items:center}
@@ -519,9 +532,13 @@ const APP_URL=location.origin+location.pathname.replace(/index\.html$/,"");
 const taskLink=id=>APP_URL+"#tarea-"+id;
 const okMail=v=>/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(v||"").trim());
 const ICON="apple-touch-icon.png";
-const APP_VERSION="2026-10-09.7";
+const APP_VERSION="2026-10-12.1";
 /* Novedades: la más nueva primero. Se muestran solas al entrar a una versión nueva. */
 const CHANGELOG=[
+ {v:"2026-10-12.1",d:"2026-10-12",items:[
+  ["home","En <b>Mis tareas</b>, tocá las tarjetas <b>Vencidas</b>, <b>Vencen hoy</b>, <b>Próximos 7 días</b> o <b>Terminadas esta semana</b> para ver directo esas tareas."],
+  ["bell","<b>Aviso de vencimiento:</b> desde 3 días antes y hasta el día que vence, te llega una notificación cada mañana con tus tareas por vencer."],
+  ["hat","<b>Proveedores desde tus contactos:</b> al agregar un proveedor podés traerlo de la agenda del celular, de una tarjeta de contacto o pegando el número copiado de WhatsApp."]]},
  {v:"2026-10-09.7",d:"2026-10-09",items:[
   ["bell","Si el celular bloquea las notificaciones, Gabinete ahora muestra los pasos para habilitarlas, incluso en celulares Samsung (también en <b>Mi cuenta → Notificaciones</b>)."]]},
  {v:"2026-10-09.6",d:"2026-10-09",items:[
@@ -610,7 +627,7 @@ const S={mode:"boot",db:null,user:null,uid:null,myName:"",meId:null,canWrite:tru
   L:{members:{},projects:{},tasks:{},history:[],contacts:{}},D:null,got:{},
   view:"home",pid:null,q:"",fm:null,showArch:false,teamDone:false,
   cal:{y:now.getFullYear(),m:now.getMonth(),sel:TODAY(),mine:false,pid:""},
-  hf:{who:"",proj:""},histOlder:[],histEnd:false,openTask:null,quickOpen:null,mcp:null,myEmail:"",hashTask:(location.hash.match(/^#tarea-([0-9a-f-]{36})$/)||[])[1]||null,session:null,isAdmin:false,dirty:false,justDragged:0};
+  hf:{who:"",proj:""},histOlder:[],histEnd:false,openTask:null,quickOpen:null,mcp:null,myEmail:"",hashTask:(location.hash.match(/^#tarea-([0-9a-f-]{36})$/)||[])[1]||null,homeF:(location.hash.match(/^#ver-(over|today|week|doneW)$/)||[])[1]||null,session:null,isAdmin:false,dirty:false,justDragged:0};
 const DATA=()=>S.mode==="live"?S.L:(S.D||S.L);
 const live=()=>S.mode==="live";
 
@@ -806,16 +823,86 @@ function provToggle(tid,cid){ const t=DATA().tasks[tid]; if(!t) return; const cu
   if(ok) log("provok",{taskId:tid,title:t.title,projectId:t.projectId,cname:(CT()[cid]||{}).name||""}); }
 function provRemove(tid,cid){ const t=DATA().tasks[tid]; if(!t) return; editTask(tid,{providers:(t.providers||[]).filter(y=>y.c!==cid)});
   log("provrm",{taskId:tid,title:t.title,projectId:t.projectId,cname:(CT()[cid]||{}).name||""}); }
+/* ---------- traer proveedores desde los contactos ----------
+   · "Mis contactos": abre la agenda del celular (solo Chrome en Android; ahí están también los contactos de WhatsApp).
+   · "Tarjeta de contacto": un archivo .vcf (iPhone: Contactos → Compartir contacto; computadora: exportar desde
+     Google Contactos u Outlook). Si el archivo trae varios contactos, se elige cuál.
+   · "Pegar": un número o un contacto copiado (por ejemplo desde WhatsApp). */
+const CPICK="contacts" in navigator&&navigator.contacts&&typeof navigator.contacts.select==="function";
+const telKey=p=>String(p||"").replace(/\D/g,"").slice(-8);
+function findDupContact(c){ const k=telKey(c.phone), m=String(c.email||"").trim().toLowerCase();
+  return contactsL().find(x=>(k.length>=7&&telKey(x.phone)===k)||(m&&String(x.email||"").trim().toLowerCase()===m))||null; }
+function qpDecode(v){ try{ return decodeURIComponent(v.replace(/=([0-9A-F]{2})/gi,"%$1")); }catch(_){ return v; } }
+const semi=v=>v.replace(/\\;/g,"\u0001").split(";").map(x=>x.replace(/\u0001/g,"\\;"));  /* separa por ";" sin cortar los "\;" escapados */
+function parseVcards(txt){
+  const raw=String(txt||"").replace(/\r\n?/g,"\n").replace(/\n[ \t]/g,"").split("\n"), out=[]; let cur=null;
+  for(let i=0;i<raw.length;i++){ let l=raw[i];
+    while(/QUOTED-PRINTABLE/i.test(l.split(":")[0])&&/=$/.test(l)&&i+1<raw.length) l=l.slice(0,-1)+raw[++i];
+    const k=l.indexOf(":"); if(k<0) continue; const head=l.slice(0,k), val=l.slice(k+1), key=head.split(";")[0].split(".").pop().toUpperCase();
+    const dec=v=>(/QUOTED-PRINTABLE/i.test(head)?qpDecode(v):v).replace(/\\n/gi," ").replace(/\\([,;:\\])/g,"$1").trim();
+    if(key==="BEGIN"){ cur={fn:"",n:"",tel:[],email:"",org:""}; continue; }
+    if(!cur) continue;
+    if(key==="END"){ const tel=(cur.tel.find(t=>t.cell)||cur.tel[0]||{}).v||"", name=cur.fn||cur.n||cur.org||tel;
+      if(name) out.push({name,phone:tel,email:cur.email,rubro:cur.org&&cur.org!==name?cur.org:""}); cur=null; }
+    else if(key==="FN") cur.fn=dec(val);
+    else if(key==="N"){ const a=semi(val).map(dec); cur.n=[a[1],a[2],a[0]].filter(Boolean).join(" "); }
+    else if(key==="TEL"&&dec(val)) cur.tel.push({v:dec(val).replace(/^tel:/i,""),cell:/CELL|MOBILE|WHATSAPP|IPHONE/i.test(head)});
+    else if(key==="EMAIL"&&!cur.email) cur.email=dec(val);
+    else if(key==="ORG"&&!cur.org) cur.org=dec(semi(val)[0]);
+  }
+  return out;
+}
+function parseLoose(txt){ txt=String(txt||"").trim(); if(!txt) return null;
+  if(/BEGIN:VCARD/i.test(txt)) return parseVcards(txt)[0]||null;
+  const em=(txt.match(/[^\s@<>:]+@[^\s@<>]+\.[A-Za-z]{2,}/)||[""])[0], rest=txt.replace(em,"");
+  const tel=(rest.match(/\+?\d[\d\s().-]{5,}\d/)||[""])[0];
+  const name=rest.replace(tel,"").replace(/[~:|,;<>()]+/g," ").replace(/\s+/g," ").trim().slice(0,80);
+  if(!tel&&!em) return null; return {name,phone:tel.replace(/[().-]/g," ").replace(/\s+/g," ").trim(),email:em,rubro:""}; }
+function importHelpHTML(){
+  const and=/Android/i.test(navigator.userAgent);
+  const L=isIOS?["<b>Desde WhatsApp:</b> abrí el chat → tocá el nombre → mantené apretado el número → <b>Copiar</b>. Acá tocá <b>Pegar</b>.",
+      "<b>Desde Contactos:</b> abrí el contacto → <b>Compartir contacto</b> → <b>Guardar en Archivos</b>. Acá tocá <b>Tarjeta de contacto</b> y elegilo."]
+    :and?[CPICK?"<b>Mis contactos</b> abre la agenda del celular: ahí están los mismos contactos que usás en WhatsApp.":"Abrí Gabinete con <b>Chrome</b> para poder elegir directo desde la agenda del celular.",
+      "<b>Desde WhatsApp:</b> abrí el chat → tocá el nombre → mantené apretado el número → <b>Copiar</b>. Acá tocá <b>Pegar</b>."]
+    :["<b>Desde WhatsApp Web o de escritorio:</b> abrí el chat → tocá el nombre → copiá el número. Acá tocá <b>Pegar</b>.",
+      "<b>Desde Google Contactos u Outlook:</b> elegí el contacto → <b>Exportar</b> → <b>vCard</b>. Acá tocá <b>Tarjeta de contacto</b> y elegí el archivo (si trae varios, elegís cuál)."];
+  return `<ul style="margin:0;padding-left:18px;display:grid;gap:6px">${L.map(x=>`<li>${x}</li>`).join("")}</ul>`; }
+function importRowHTML(){
+  return `<div class="imp"><div class="row"><span class="muted small">Traer de:</span>${CPICK?`<button type="button" class="btn sm" data-imp="phone">${ic("user")}Mis contactos</button>`:""}<button type="button" class="btn sm" data-imp="file">${ic("user")}Tarjeta de contacto</button><button type="button" class="btn sm" data-imp="paste">${ic("chat")}Pegar de WhatsApp</button><button type="button" class="btn ghost sm" data-imp="help" aria-expanded="false">¿Cómo?</button></div>
+<input type="file" data-imp="in" accept=".vcf,.vcard,text/vcard,text/x-vcard" hidden><div class="imphelp muted small" data-imp="hl" hidden>${importHelpHTML()}</div><div class="implist" data-imp="list" hidden></div></div>`; }
+/* conecta los botones de importación; fill(c) recibe {name,phone,email,rubro} */
+function bindImport(root,fill){
+  const q=k=>root.querySelector(`[data-imp=${k}]`), box=q("list");
+  const choose=L=>{ if(!L.length) return toast("No se encontró ningún contacto en ese archivo.");
+    if(L.length===1){ box.hidden=true; return fill(L[0]); }
+    box.hidden=false; box.innerHTML=`<input class="inp" placeholder="Buscar entre ${L.length} contactos" aria-label="Buscar contacto"><div class="res"></div>`;
+    const inp=box.querySelector("input"), res=box.querySelector(".res");
+    const draw=()=>{ const v=inp.value.trim().toLowerCase(); const M=L.map((c,i)=>[c,i]).filter(([c])=>!v||[c.name,c.phone,c.rubro].some(x=>String(x||"").toLowerCase().includes(v))).slice(0,50);
+      res.innerHTML=M.map(([c,i])=>`<button type="button" data-i="${i}">${ic("user")}<span style="flex:1;min-width:0">${esc(c.name)}${c.rubro?` <small>· ${esc(c.rubro)}</small>`:""}</span><small>${esc(c.phone||c.email||"")}</small></button>`).join("")||`<span class="muted small">Sin resultados</span>`;
+      res.querySelectorAll("[data-i]").forEach(b=>b.onclick=()=>{ box.hidden=true; box.innerHTML=""; fill(L[+b.dataset.i]); }); };
+    inp.addEventListener("input",draw); inp.addEventListener("keydown",e=>{ if(e.key==="Enter"){ e.preventDefault(); res.querySelector("button")?.click(); } }); draw(); inp.focus(); };
+  q("phone")&&(q("phone").onclick=async()=>{ try{ const r=await navigator.contacts.select(["name","tel","email"],{multiple:false}); const c=r&&r[0]; if(!c) return;
+      fill({name:(c.name||[])[0]||"",phone:(c.tel||[])[0]||"",email:(c.email||[])[0]||"",rubro:""}); }catch(e){ console.warn(e); toast("No se pudo abrir la agenda del celular."); } });
+  q("file").onclick=()=>q("in").click();
+  q("in").onchange=async()=>{ const f=q("in").files[0]; q("in").value=""; if(!f) return; if(f.size>5e6) return toast("El archivo es demasiado grande.");
+    choose(parseVcards(await f.text())); };
+  q("paste").onclick=async()=>{ let t=""; try{ t=await navigator.clipboard.readText(); }catch(_){}
+    if(!parseLoose(t)) t=prompt("Pegá acá el número o el contacto copiado de WhatsApp:",t||"")||"";
+    if(!t.trim()) return; const c=parseLoose(t); if(!c) return toast("No se encontró un número de teléfono en lo que pegaste."); fill(c); };
+  q("help").onclick=()=>{ const h=q("hl"); h.hidden=!h.hidden; q("help").setAttribute("aria-expanded",String(!h.hidden)); };
+}
 /* buscador para elegir o crear proveedores (se usa en "Nueva tarea" y en el detalle de la tarea) */
 function mountPicker(host,{exclude,onPick}){
   let open=false, mode="list", draft="";
   const draw=()=>{
     if(!host.isConnected) return;
     if(S.noContacts){ host.innerHTML=`<p class="muted small" style="margin:0">La agenda de proveedores todavía no está activada.</p>`; return; }
-    if(!open){ host.innerHTML=`<button type="button" class="btn sm" data-pp="open">${ic("plus")}Agregar proveedor o contratista</button>`;
-      host.querySelector("[data-pp=open]").onclick=()=>{ open=true; draw(); host.querySelector("input")?.focus(); }; return; }
+    if(!open){ host.innerHTML=`<div class="row"><button type="button" class="btn sm" data-pp="open">${ic("plus")}Agregar proveedor o contratista</button><button type="button" class="btn ghost sm" data-pp="imp">${ic("user")}Desde mis contactos o WhatsApp</button></div>`;
+      host.querySelector("[data-pp=open]").onclick=()=>{ open=true; draw(); host.querySelector("input")?.focus(); };
+      host.querySelector("[data-pp=imp]").onclick=()=>{ open=true; mode="new"; draft=""; draw(); const b=host.querySelector("[data-imp=phone]"); if(b) b.click(); else { const h=host.querySelector("[data-imp=help]"); h&&h.click(); } }; return; }
     if(mode==="new"){
       host.innerHTML=`<div class="ppick"><b class="small">Nuevo proveedor o contratista</b>
+${importRowHTML()}
 <div class="g2"><label class="fld"><span>Nombre o empresa</span><input class="inp" data-pp="n" value="${esc(draft)}" required></label>
 <label class="fld"><span>Rubro</span><input class="inp" data-pp="r" placeholder="Ej. Herrería, Vidriería, Electricista"></label>
 <label class="fld"><span>Teléfono / WhatsApp</span><input class="inp" data-pp="p" inputmode="tel" placeholder="Ej. 0981 123 456"></label>
@@ -825,6 +912,10 @@ function mountPicker(host,{exclude,onPick}){
       const save=()=>{ const name=g("n").value.trim(); if(!name){ g("n").focus(); return; }
         const id=createContact({name,rubro:g("r").value,phone:g("p").value,email:g("e").value}); mode="list"; draft=""; onPick(id); draw(); host.querySelector("input")?.focus(); toast(name+" quedó en la agenda de proveedores"); };
       g("save").onclick=save; g("back").onclick=()=>{ mode="list"; draw(); host.querySelector("input")?.focus(); };
+      bindImport(host,c=>{ const dup=findDupContact(c);
+        if(dup){ mode="list"; draft=""; onPick(dup.id); draw(); toast(dup.name+" ya estaba en la agenda: quedó agregado a la tarea"); return; }
+        if(c.name) g("n").value=c.name; if(c.phone) g("p").value=c.phone; if(c.email) g("e").value=c.email; if(c.rubro&&!g("r").value) g("r").value=c.rubro;
+        (g("n").value?g("r"):g("n")).focus(); toast("Datos cargados. Revisalos y tocá Guardar."); });
       host.querySelectorAll("input").forEach(i=>i.addEventListener("keydown",e=>{ if(e.key==="Enter"){ e.preventDefault(); save(); } }));
       g(draft?"r":"n").focus(); return; }
     host.innerHTML=`<div class="ppick"><div class="row"><input class="inp" data-pp="q" placeholder="Buscar o escribir un nombre nuevo" autocomplete="off" aria-label="Buscar proveedor o contratista" style="flex:1" value="${esc(draft)}"><button type="button" class="icon-btn" data-pp="close" aria-label="Cerrar buscador">${ic("x")}</button></div><div class="res"></div></div>`;
@@ -856,6 +947,7 @@ function contactModal(id){
   const c=id?CT()[id]:{name:"",rubro:"",phone:"",email:"",notes:""}; if(id&&!c) return;
   modal(`<div class="sheet-h"><h2>${id?"Editar proveedor":"Nuevo proveedor o contratista"}</h2><span class="sp"></span><button class="icon-btn" data-act="close" aria-label="Cerrar">${ic("x")}</button></div>
 <form class="sheet-b" id="ctForm">
+${id?"":importRowHTML()}
 <div class="g2"><label class="fld"><span>Nombre o empresa</span><input class="inp" id="ct-name" value="${esc(c.name)}" required autofocus placeholder="Ej. Herrería Benítez"></label>
 <label class="fld"><span>Rubro</span><input class="inp" id="ct-rubro" value="${esc(c.rubro||"")}" placeholder="Ej. Herrería, Vidriería, Electricista"></label>
 <label class="fld"><span>Teléfono / WhatsApp</span><input class="inp" id="ct-phone" value="${esc(c.phone||"")}" inputmode="tel" placeholder="Ej. 0981 123 456"></label>
@@ -864,6 +956,10 @@ function contactModal(id){
 <div class="row">${id?`<span id="ctDel"><button type="button" class="btn ghost sm danger" data-act="ctDelAsk">${ic("trash")}Quitar de la agenda</button></span>`:""}<span class="sp"></span><button type="button" class="btn ghost" data-act="close">Cancelar</button><button class="btn pri" type="submit">${id?"Guardar":`${ic("plus")}Agregar`}</button></div>
 </form>`,"narrow");
   S.ctEdit=id||null;
+  if(!id) bindImport($("#ctForm"),c=>{ const dup=findDupContact(c);
+    if(dup) toast("Ojo: "+dup.name+" ya está en la agenda con ese "+(telKey(c.phone)&&telKey(dup.phone)===telKey(c.phone)?"teléfono":"mail")+".");
+    if(c.name) $("#ct-name").value=c.name; if(c.phone) $("#ct-phone").value=c.phone; if(c.email) $("#ct-email").value=c.email; if(c.rubro&&!$("#ct-rubro").value) $("#ct-rubro").value=c.rubro;
+    $("#ct-rubro").focus(); });
   $("#ctForm").addEventListener("submit",e=>{ e.preventDefault(); const name=$("#ct-name").value.trim(); if(!name) return $("#ct-name").focus();
     const o={name,rubro:$("#ct-rubro").value.trim(),phone:$("#ct-phone").value.trim(),email:$("#ct-email").value.trim(),notes:$("#ct-notes").value.trim()};
     if(o.email&&!okMail(o.email)){ toast("Revisá el mail: parece incompleto."); $("#ct-email").focus(); return; }
@@ -896,17 +992,22 @@ V.home=()=>{
   const T=TODAY(), mineAll=tasksL(t=>hasA(t,S.meId)&&qMatch(t)), open=mineAll.filter(t=>t.status!=="done");
   const mine=mineAll.filter(t=>!t.private), privs=tasksL(t=>t.private&&(hasA(t,S.meId)||t.createdBy===S.meId)&&qMatch(t));
   const privHid=ls.get("gab.privHide")==="1", privOpen=privs.filter(t=>t.status!=="done").length;
-  const over=open.filter(t=>t.due&&t.due<T).length, today=open.filter(t=>t.due===T).length;
-  const week=open.filter(t=>t.due&&t.due>=T&&t.due<=addD(T,7)).length;
-  const doneW=mineAll.filter(t=>t.status==="done"&&t.doneAt&&t.doneAt>Date.now()-7*864e5).length;
+  const F={over:open.filter(t=>t.due&&t.due<T), today:open.filter(t=>t.due===T), week:open.filter(t=>t.due&&t.due>=T&&t.due<=addD(T,7)),
+    doneW:mineAll.filter(t=>t.status==="done"&&t.doneAt&&t.doneAt>Date.now()-7*864e5)};
+  const over=F.over.length, today=F.today.length, week=F.week.length, doneW=F.doneW.length;
+  const hf=F[S.homeF]?S.homeF:null;
+  const stat=(k,cls,v,l)=>`<button type="button" class="stat ${cls}" data-act="homeF" data-f="${k}" aria-pressed="${hf===k}" title="Ver ${l.toLowerCase()}"><span class="v">${v}</span><span class="l">${l}</span></button>`;
+  const fList=hf?(hf==="doneW"?F.doneW.slice().sort((a,b)=>(b.doneAt||0)-(a.doneAt||0)):F[hf].slice().sort((a,b)=>(a.due<b.due?-1:a.due>b.due?1:0)||(b.prio||0)-(a.prio||0))):[];
   const h=new Date().getHours(), sal=h<12?"Buen día":h<19?"Buenas tardes":"Buenas noches";
   return `<div class="hello"><div><div class="eyebrow">${esc(longD(T))}</div><h1>${sal}, ${esc(first(me.name))}</h1></div><span class="sp"></span><span class="muted small">${open.length} ${open.length===1?"tarea abierta":"tareas abiertas"}</span></div>
 <div class="stats">
-<div class="stat ${over?"bad":""}"><span class="v">${over}</span><span class="l">Vencidas</span></div>
-<div class="stat ${today?"warn":""}"><span class="v">${today}</span><span class="l">Vencen hoy</span></div>
-<div class="stat"><span class="v">${week}</span><span class="l">Próximos 7 días</span></div>
-<div class="stat ok"><span class="v">${doneW}</span><span class="l">Terminadas esta semana</span></div>
+${stat("over",over?"bad":"",over,"Vencidas")}
+${stat("today",today?"warn":"",today,"Vencen hoy")}
+${stat("week","",week,"Próximos 7 días")}
+${stat("doneW","ok",doneW,"Terminadas esta semana")}
 </div>
+${hf?`<section class="hfsec" id="homeF"><div class="sec-h"><h2>${HOMEF[hf]}</h2><span class="muted small">${fList.length} ${fList.length===1?"tarea":"tareas"}</span><span class="sp"></span><button class="btn ghost sm" data-act="homeF" data-f="">${ic("x")}Cerrar</button></div>
+${fList.length?`<div class="hflist">${fList.map(t=>cardHTML(t,{showAv:false})).join("")}</div>`:`<p class="muted small" style="margin:0">${HOMEF_EMPTY[hf]}</p>`}</section>`:""}
 <div class="sec-h"><h2>Mis tareas</h2><span class="muted small">Ordenadas por relevancia: primero lo vencido o que vence hoy, después Urgente y Alta, después lo que tiene fecha. Arrastrá entre columnas o al dock para pasarlas a otra persona o tablero.</span></div>
 <div class="board">${STATUS.map(s=>colHTML({ck:"home-"+s.k,st:s.k,title:s.n,attrs:`data-status="${s.k}" data-private="0"`,
   tasks:s.k==="done"?sortCol(mine.filter(t=>t.status===s.k),s.k):sortRel(mine.filter(t=>t.status===s.k)),limit:s.k==="done"?12:0,opts:{showAv:false},quick:s.k!=="done",
@@ -917,6 +1018,8 @@ ${privHid?"":`<div class="board">${STATUS.map(s=>colHTML({ck:"priv-"+s.k,st:s.k,
   tasks:s.k==="done"?sortCol(privs.filter(t=>t.status===s.k),s.k):sortRel(privs.filter(t=>t.status===s.k)),limit:s.k==="done"?12:0,opts:{showAv:false},quick:s.k!=="done",
   empty:s.k==="done"?"Lo terminado aparece acá":"Sin tareas privadas"})).join("")}</div>`}</section>`;
 };
+const HOMEF={over:"Vencidas",today:"Vencen hoy",week:"Próximos 7 días",doneW:"Terminadas esta semana"};
+const HOMEF_EMPTY={over:"No tenés tareas vencidas.",today:"No tenés tareas que venzan hoy.",week:"No tenés tareas que venzan en los próximos 7 días.",doneW:"Todavía no terminaste tareas esta semana."};
 V.boards=()=>{
   const ps=projectsL(S.showArch); const D=DATA();
   if(!ps.length) return `<div class="empty"><h2>Todavía no hay tableros</h2><p>Creá un tablero por cada obra o proyecto del estudio. Después cargás las tareas y las asignás al equipo.</p>${canEdit()?`<button class="btn pri" data-act="newProj">${ic("plus")}Crear el primer tablero</button>`:""}</div>`;
@@ -1377,8 +1480,9 @@ function profileModal(){
   if(st==="denied") return `<div class="row"><span class="muted small" style="font-weight:400;flex:1">Están bloqueadas en este dispositivo.</span><button class="btn sm" data-act="pushHelp">Cómo habilitarlas</button></div>`;
   if(st==="ios-browser") return `<span class="muted small" style="font-weight:400">En iPhone: Compartir → «Agregar a inicio», abrí Gabinete desde ese ícono y activalas acá.</span>`;
   if(st==="unsupported") return `<span class="muted small" style="font-weight:400">Este navegador no admite notificaciones.</span>`;
-  return `<div class="row"><span class="muted small" style="font-weight:400;flex:1">Te avisa al instante cuando te asignan una tarea.</span><button class="btn pri sm" data-act="pushOn">${ic("bell")}Activar</button></div>`; })()}</div>
-${S.isAdmin?`<div class="fld"><span>Administración</span><div class="row"><span class="muted small" style="flex:1;min-width:180px;font-weight:400">Pedile a todo el equipo que cargue la última versión de Gabinete.</span><button class="btn sm" data-act="notifyUpdate">${ic("bell")}Avisar actualización a todos</button></div></div>`:""}
+  return `<div class="row"><span class="muted small" style="font-weight:400;flex:1">Te avisa cuando te asignan una tarea y cada día desde 3 días antes de que venza.</span><button class="btn pri sm" data-act="pushOn">${ic("bell")}Activar</button></div>`; })()}</div>
+${S.isAdmin?`<div class="fld"><span>Administración</span><div class="row"><span class="muted small" style="flex:1;min-width:180px;font-weight:400">Pedile a todo el equipo que cargue la última versión de Gabinete.</span><button class="btn sm" data-act="notifyUpdate">${ic("bell")}Avisar actualización a todos</button></div>
+<div class="row"><span class="muted small" style="flex:1;min-width:180px;font-weight:400">Los avisos de tareas por vencer salen solos todos los días a las 8:00. Con este botón se mandan ahora.</span><button class="btn sm" data-act="dueNow">${ic("cal")}Mandar avisos de vencimiento</button></div></div>`:""}
 <div class="row"><button class="btn" data-act="memEdit" data-mid="${esc(S.meId||"")}">${ic("edit")}Editar mis datos</button><span class="sp"></span><button class="btn danger" data-act="signOut">Cerrar sesión</button></div>
 <div class="row"><span class="muted small">Versión ${esc(APP_VERSION)}</span><span class="sp"></span><button class="btn ghost sm" data-act="news">${ic("bell")}Novedades</button></div></div>`,"narrow");
 }
@@ -1431,9 +1535,11 @@ document.addEventListener("click",e=>{
     case "privAsk": $("#privZone").innerHTML=`<span class="confirm" style="font-size:12.5px">¿Que la vea todo el equipo? Después no se puede volver a ocultar. <button class="btn sm" data-act="privNo">No</button><button class="btn sm pri" data-act="privYes" data-id="${esc(ds.id)}">${ic("eye")}Hacer visible</button></span>`; break;
     case "privNo": refreshTask(); break;
     case "privYes": moveTask(ds.id,{private:false}); render(); refreshTask(); break;
+    case "homeF": S.homeF=ds.f&&S.homeF!==ds.f?ds.f:null; render(); if(S.homeF) setTimeout(()=>$("#homeF")?.scrollIntoView({behavior:"smooth",block:"start"}),30); break;
     case "privHide": ls.set("gab.privHide",ls.get("gab.privHide")==="1"?"0":"1"); render(); break;
     case "pushOff": disablePush(); break;
     case "pushTest": pushTest(); break;
+    case "dueNow": pushCall({action:"due_daily"}).then(j=>toast(j.tasks?`Avisos enviados: ${j.sent} ${j.sent===1?"dispositivo":"dispositivos"} de ${j.people} ${j.people===1?"persona":"personas"} (${j.tasks} ${j.tasks===1?"tarea vence":"tareas vencen"} en los próximos 3 días)`:"No hay tareas que venzan en los próximos 3 días.")).catch(e=>toast("No se pudieron mandar: "+(e.message||e))); break;
     case "pushLater": ls.set("gab.pushask","no"); render(); break;
     case "provList": e.stopPropagation(); provListModal(ds.id); break;
     case "provOk": e.stopPropagation(); if(!canEdit()) break; provToggle(ds.id,ds.c); refreshProvViews(); break;
@@ -1721,9 +1827,12 @@ function pushBanner(){
   if(S.view!=="home"||ls.get("gab.pushask")==="no") return "";
   const st=pushState(); if(st==="on"||st==="denied"||st==="unsupported") return "";
   if(st==="ios-browser") return `<div class="pushbar">${ic("bell")}<span style="flex:1;min-width:200px">Para recibir avisos en el iPhone: tocá <b>Compartir → Agregar a inicio</b> y abrí Gabinete desde ese ícono.</span><button class="btn ghost sm" data-act="pushLater">Entendido</button></div>`;
-  return `<div class="pushbar">${ic("bell")}<span style="flex:1;min-width:200px">Activá las notificaciones para enterarte al instante cuando te asignen una tarea.</span><button class="btn ghost sm" data-act="pushLater">Ahora no</button><button class="btn pri sm" data-act="pushOn">Activar</button></div>`;
+  return `<div class="pushbar">${ic("bell")}<span style="flex:1;min-width:200px">Activá las notificaciones para enterarte cuando te asignen una tarea y cuando una esté por vencer.</span><button class="btn ghost sm" data-act="pushLater">Ahora no</button><button class="btn pri sm" data-act="pushOn">Activar</button></div>`;
 }
-navigator.serviceWorker&&navigator.serviceWorker.addEventListener("message",e=>{ const u=e.data&&e.data.open; if(u){ const m=u.match(/#tarea-([0-9a-f-]{36})/); if(m&&DATA().tasks[m[1]]) taskModal(m[1]); } });
+/* enlaces de las notificaciones: #tarea-<id> abre la tarea, #ver-<filtro> abre Mis tareas filtrado (vencidas, hoy, 7 días) */
+function openHashLink(h){ const f=String(h||"").match(/#ver-(over|today|week|doneW)\b/); if(f){ S.homeF=f[1]; if($("#layer").innerHTML) closeModal(); go("home"); setTimeout(()=>$("#homeF")?.scrollIntoView({block:"start"}),30); return true; }
+  const m=String(h||"").match(/#tarea-([0-9a-f-]{36})/); if(m){ if(DATA().tasks[m[1]]) taskModal(m[1]); else toast("Esa tarea ya no existe."); return true; } return false; }
+navigator.serviceWorker&&navigator.serviceWorker.addEventListener("message",e=>{ const u=e.data&&e.data.open; if(u&&S.session) openHashLink(u); });
 
 /* ---------- actualizaciones automáticas ----------
    Cuando se publica una versión nueva, cada dispositivo la detecta solo. Si la persona vuelve a abrir
@@ -1760,7 +1869,7 @@ async function boot(){
   setInterval(()=>checkUpdate(false),5*60*1000); setInterval(()=>{ if(S.view==="home"&&!DRAG) render(); },30*60*1000); setTimeout(()=>checkUpdate(false),20000);
   addEventListener("online",()=>{ resync(); render(); }); addEventListener("offline",()=>render());
 }
-addEventListener("hashchange",()=>{ const m=location.hash.match(/^#tarea-([0-9a-f-]{36})$/); if(m&&S.session){ if(DATA().tasks[m[1]]) taskModal(m[1]); else toast("Esa tarea ya no existe."); } });
+addEventListener("hashchange",()=>{ if(S.session) openHashLink(location.hash); });
 renderTabbar(); boot();
 })();
 </script>
