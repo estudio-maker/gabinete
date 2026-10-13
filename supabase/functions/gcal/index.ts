@@ -5,14 +5,13 @@
 //    alguien (cualquiera del equipo) cambia la fecha, el título, el tablero o los responsables, la base
 //    llama a esta función y se actualiza el calendario de cada responsable. Si la tarea se termina, se
 //    borra, se le quita la fecha o se marca privada, el evento se quita.
-//  - Google → Gabinete: devuelve sus eventos de Google para verlos en el Calendario de Gabinete.
+//  Solo va de Gabinete a Google: el calendario personal de cada uno no entra a Gabinete.
 //
 // Acciones (POST JSON):
 //   con la sesión del usuario en Authorization:
 //     status      -> si está conectado y con qué cuenta
 //     connect     -> devuelve el enlace de Google para autorizar
 //     disconnect  -> quita la conexión y borra el calendario "Gabinete" de su Google
-//     events      -> sus eventos de Google entre {desde, hasta} (AAAA-MM-DD)
 //     sync        -> vuelve a sincronizar todas sus tareas
 //   con la clave de push_cron (la usa la base):
 //     task        -> sincroniza una tarea {id} para todos sus responsables conectados
@@ -28,14 +27,13 @@ const GID = Deno.env.get("GOOGLE_CLIENT_ID") || "";
 const GSECRET = Deno.env.get("GOOGLE_CLIENT_SECRET") || "";
 const APP = "https://estudio-maker.github.io/gabinete/";
 const REDIRECT = SUPA.replace(/^http:/, "https:") + "/functions/v1/gcal";
-const SCOPES = "https://www.googleapis.com/auth/calendar.app.created https://www.googleapis.com/auth/calendar.readonly";
+const SCOPES = "email https://www.googleapis.com/auth/calendar.app.created";
 const CAL_NAME = "Gabinete";
 const TZ = "America/Asuncion";
 const STATUS = { todo: "Pendiente", doing: "En curso", review: "En revisión", done: "Terminado" };
 const CORS = { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type", "Access-Control-Allow-Methods": "GET, POST, OPTIONS" };
 const J = (o, s = 200) => new Response(JSON.stringify(o), { status: s, headers: { ...CORS, "Content-Type": "application/json" } });
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const YMD = /^\d{4}-\d{2}-\d{2}$/;
 const svcHeaders = () => SRK.startsWith("sb_") ? { apikey: SRK } : { apikey: SRK, Authorization: "Bearer " + SRK };
 const te = new TextEncoder();
 
@@ -202,38 +200,6 @@ async function syncTask(id) {
   return { cuentas: done };
 }
 
-// ---- eventos de Google → Gabinete ----
-async function events(acc, desde, hasta) {
-  const tmin = new Date(desde + "T00:00:00-03:00"), tmax = new Date(addDay(hasta) + "T00:00:00-03:00");
-  if (!(tmax > tmin) || tmax - tmin > 100 * 864e5) throw new Error("Rango de fechas inválido");
-  const cals = ((await g(acc, "users/me/calendarList?minAccessRole=reader&maxResults=50")).items || [])
-    .filter(c => c.id !== acc.calendar_id && c.selected !== false && !c.hidden && !c.deleted);
-  const fmt = (iso, o) => new Intl.DateTimeFormat("en-CA", { timeZone: TZ, hourCycle: "h23", ...o }).format(new Date(iso));
-  const out = [];
-  await Promise.all(cals.map(async c => {
-    let page = "";
-    for (let i = 0; i < 5; i++) {
-      const q = new URLSearchParams({ timeMin: tmin.toISOString(), timeMax: tmax.toISOString(), singleEvents: "true", orderBy: "startTime", maxResults: "250", timeZone: TZ });
-      if (page) q.set("pageToken", page);
-      let r; try { r = await g(acc, `calendars/${encodeURIComponent(c.id)}/events?${q}`); } catch (e) { console.warn("gcal list", c.id, String(e)); return; }
-      for (const e of r.items || []) {
-        if (e.status === "cancelled" || !e.start) continue;
-        const allDay = !!e.start.date;
-        const s = allDay ? e.start.date : fmt(e.start.dateTime, { year: "numeric", month: "2-digit", day: "2-digit" });
-        const endIso = allDay ? null : new Date(Date.parse(e.end.dateTime) - 1).toISOString();
-        const en = allDay ? new Date(Date.parse(e.end.date + "T12:00:00Z") - 864e5).toISOString().slice(0, 10) : fmt(endIso, { year: "numeric", month: "2-digit", day: "2-digit" });
-        out.push({ id: e.id, t: e.summary || "(Sin título)", s, e: en < s ? s : en,
-          h: allDay ? "" : fmt(e.start.dateTime, { hour: "2-digit", minute: "2-digit" }),
-          hf: allDay ? "" : fmt(e.end.dateTime, { hour: "2-digit", minute: "2-digit" }),
-          l: e.location || "", c: c.summaryOverride || c.summary || "", col: e.colorId ? "" : (c.backgroundColor || ""), url: e.htmlLink || "" });
-      }
-      if (!(page = r.nextPageToken)) break;
-    }
-  }));
-  out.sort((a, b) => a.s < b.s ? -1 : a.s > b.s ? 1 : (a.h || "") < (b.h || "") ? -1 : 1);
-  return out;
-}
-
 // ---- vuelta desde Google ----
 async function oauthReturn(url) {
   const back = (tag) => new Response(null, { status: 302, headers: { Location: APP + "#gcal-" + tag } });
@@ -246,13 +212,16 @@ async function oauthReturn(url) {
   const j = await r.json().catch(() => ({}));
   if (!r.ok || !j.access_token) { console.warn("gcal oauth", JSON.stringify(j)); return back("error"); }
   const granted = String(j.scope || "");
-  if (!granted.includes("calendar.app.created") || !granted.includes("calendar.readonly")) return back("permisos");
+  if (!granted.includes("calendar.app.created")) return back("permisos");
   const prev = (await rest(`gcal_cuentas?member_id=eq.${member}&select=*`))[0];
   const refresh = j.refresh_token || (prev && prev.refresh_token);
   if (!refresh) return back("error");
   const acc = { member_id: member, refresh_token: refresh, calendar_id: prev ? prev.calendar_id : null, _at: j.access_token, _exp: Date.now() + (j.expires_in - 60) * 1000 };
   let email = "";
-  try { const p = await g(acc, "calendars/primary"); email = p.id || ""; } catch (_) {}
+  try {
+    const u = await fetch("https://openidconnect.googleapis.com/v1/userinfo", { headers: { Authorization: "Bearer " + j.access_token } });
+    if (u.ok) email = String((await u.json()).email || "");
+  } catch (_) {}
   if (prev && prev.google_email && email && prev.google_email !== email) {
     // Cambió de cuenta de Google: el calendario anterior queda en la otra cuenta
     acc.calendar_id = null; await rest(`gcal_eventos?member_id=eq.${member}`, { method: "DELETE" });
@@ -294,11 +263,6 @@ Deno.serve(async (req) => {
       try { await fetch("https://oauth2.googleapis.com/revoke?token=" + encodeURIComponent(acc.refresh_token), { method: "POST" }); } catch (_) {}
       await rest(`gcal_cuentas?member_id=eq.${me.id}`, { method: "DELETE" });
       return J({ ok: true, connected: false });
-    }
-    if (b.action === "events") {
-      if (!YMD.test(b.desde || "") || !YMD.test(b.hasta || "")) return J({ ok: false, error: "Fechas inválidas" }, 400);
-      try { return J({ ok: true, connected: true, events: await events(acc, b.desde, b.hasta) }); }
-      catch (e) { if (acc.revoked) return J({ ok: true, connected: true, error: "Google quitó el permiso. Volvé a conectar.", events: [] }); throw e; }
     }
     if (b.action === "sync") return J({ ok: true, connected: true, ...(await syncMember(acc)) });
     return J({ ok: false, error: "Acción desconocida" }, 400);
