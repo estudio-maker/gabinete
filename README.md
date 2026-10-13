@@ -17,7 +17,7 @@ Cada persona conecta su propia cuenta de Google en **Mi cuenta** (o con el botó
 - Sus tareas abiertas con fecha (no privadas) se copian a un calendario **Gabinete** de su Google Calendar.
   Cuando cualquiera del equipo cambia la fecha, el título, el tablero o los responsables, se actualiza
   el calendario de cada responsable. Al terminar, borrar, quitar la fecha o marcar privada, se quita.
-- Sus eventos de Google se ven en el **Calendario** de Gabinete (botón *Google Calendar* para mostrarlos u ocultarlos).
+- Va solo de Gabinete a Google: los eventos del calendario personal no entran a Gabinete.
 
 Piezas: función `supabase/functions/gcal` (Verify JWT desactivado; secretos `GOOGLE_CLIENT_ID` y
 `GOOGLE_CLIENT_SECRET` de un cliente OAuth "Aplicación web" de Google Cloud con la API de Calendar habilitada

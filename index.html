@@ -293,13 +293,6 @@ button.stat[aria-pressed="true"]{border-color:var(--accent);box-shadow:0 0 0 3px
 .cc span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .cc{flex-direction:column;align-items:stretch;gap:0;border-left:3px solid var(--pc)}
 .cc .cb{font-family:var(--f-display);font-stretch:80%;text-transform:uppercase;letter-spacing:.06em;font-size:9.5px;font-weight:700;color:var(--ink3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.cc.g{border-left:3px dashed var(--pc);background:transparent;cursor:pointer}
-.cc.g .cb{color:var(--ink2)}
-.gclist{display:grid;gap:6px}
-.gcrow{display:flex;gap:10px;align-items:baseline;padding:8px 10px;border:1px solid var(--line);border-left:3px solid var(--pc);border-radius:8px;background:var(--sheet);min-width:0}
-.gcrow .tm{font-family:var(--f-mono);font-size:12px;color:var(--ink2);flex:none;min-width:84px}
-.gcrow .tx{display:grid;min-width:0}
-.gcrow .tx b{font-weight:500;overflow-wrap:anywhere}
 .legend{display:flex;gap:6px;flex-wrap:wrap}
 .legend button{all:unset;cursor:pointer;display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:99px;border:1px solid var(--line);background:var(--sheet);font-size:12px;max-width:100%}
 .legend button span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -557,12 +550,12 @@ const APP_URL=location.origin+location.pathname.replace(/index\.html$/,"");
 const taskLink=id=>APP_URL+"#tarea-"+id;
 const okMail=v=>/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(v||"").trim());
 const ICON="apple-touch-icon.png";
-const APP_VERSION="2026-10-13.1";
+const APP_VERSION="2026-10-13.2";
 /* Novedades: la más nueva primero. Se muestran solas al entrar a una versión nueva. */
 const CHANGELOG=[
- {v:"2026-10-13.1",d:"2026-10-13",items:[
-  ["cal","<b>Google Calendar:</b> conectá tu cuenta de Google en <b>Mi cuenta</b> o en el <b>Calendario</b>. Tus tareas con fecha aparecen solas en un calendario «Gabinete» de tu Google Calendar y se actualizan cuando cualquiera del equipo les cambia la fecha. Las tareas privadas no se copian."],
-  ["cal","Con Google conectado, tus eventos de Google se ven también en el Calendario de Gabinete (botón <b>Google Calendar</b> para mostrarlos u ocultarlos)."]]},
+ {v:"2026-10-13.2",d:"2026-10-13",items:[
+  ["cal","<b>Google Calendar:</b> conectá tu cuenta de Google en <b>Mi cuenta</b> o en el <b>Calendario</b>. Tus tareas con fecha aparecen solas en un calendario «Gabinete» de tu Google Calendar y se actualizan cuando cualquiera del equipo les cambia la fecha. Las tareas privadas no se copian, y lo que tengas en tu calendario personal no entra a Gabinete."],
+  ["cal","Si en el celular no ves las tareas, activá el calendario «Gabinete» en la lista de calendarios de tu app de calendario."]]},
  {v:"2026-10-12.2",d:"2026-10-12",items:[
   ["ctl","<b>Control del equipo</b> (solo administradores): una pestaña con el resumen de cada persona (abiertas, en curso, vencidas, vencen hoy, próximos 7 días, sin fecha y terminadas) y sus tareas con un toque. Se puede filtrar por tablero."]]},
  {v:"2026-10-12.1",d:"2026-10-12",items:[
@@ -768,42 +761,28 @@ function deleteTask(id){ if(!canEdit()) return; const t=DATA().tasks[id]; if(!t)
    Supabase copia sus tareas con fecha (no privadas) a un calendario "Gabinete" de su Google Calendar y
    las mantiene al día cuando cualquiera del equipo las cambia. Acá se muestran sus eventos de Google. */
 const GCAL_FN=SUPA_URL+"/functions/v1/gcal";
-const GC={st:"",email:"",error:"",ev:[],range:"",busy:false,at:0};
-const gcOn=()=>GC.st==="ok"&&ls.get("gab.gcal")!=="off";
-function gcRange(){ const {y,m}=S.cal, sd=(new Date(y,m,1).getDay()+6)%7, w=Math.ceil((sd+new Date(y,m+1,0).getDate())/7);
-  return ymd(new Date(y,m,1-sd))+"|"+ymd(new Date(y,m,w*7-sd)); }
+const GC={st:"",email:"",error:""};
 async function gcFn(body){ const {data:{session}}=await sb.auth.getSession(); if(!session) throw new Error("Sin sesión");
   const r=await fetch(GCAL_FN,{method:"POST",headers:{"Content-Type":"application/json",Authorization:"Bearer "+session.access_token,apikey:SUPA_KEY},body:JSON.stringify(body)});
   const j=await r.json().catch(()=>({})); if(!r.ok||!j.ok) throw new Error(j.error||("error "+r.status)); return j; }
-function gcSet(j){ GC.st=j.connected?"ok":"off"; if(j.email!==undefined) GC.email=j.email||""; GC.error=j.error||""; if(!j.connected){ GC.ev=[]; GC.range=""; } }
-async function gcStatus(){ try{ gcSet(await gcFn({action:"status"})); }catch(e){ console.warn("gcal",e); GC.st="err"; } if(GC.st==="ok") gcEvents(); else if(S.view==="cal") scheduleRender(); }
-async function gcEvents(){
-  if(GC.st!=="ok"||GC.busy) return; const rg=gcRange(), [desde,hasta]=rg.split("|"); GC.busy=true; GC.range=rg;
-  try{ const j=await gcFn({action:"events",desde,hasta}); gcSet(j); GC.ev=Array.isArray(j.events)?j.events:[]; GC.at=Date.now(); }
-  catch(e){ console.warn("gcal",e); GC.error=String(e.message||e); }
-  finally{ GC.busy=false; if(S.view==="cal") scheduleRender(); if(GC.st==="ok"&&GC.range!==gcRange()) gcEvents(); }
-}
+function gcSet(j){ GC.st=j.connected?"ok":"off"; if(j.email!==undefined) GC.email=j.email||""; GC.error=j.error||""; }
+async function gcStatus(){ try{ gcSet(await gcFn({action:"status"})); }catch(e){ console.warn("gcal",e); GC.st="err"; } if(S.view==="cal") scheduleRender(); }
 async function gcConnect(){ toast("Abriendo Google…"); try{ const j=await gcFn({action:"connect"}); location.href=j.url; }catch(e){ toast("No se pudo conectar con Google: "+(e.message||e)); } }
 async function gcDisconnect(){ if(!confirm("¿Desconectar Google Calendar? Se borra el calendario «Gabinete» de tu Google; tus tareas en Gabinete no cambian.")) return;
   try{ gcSet(await gcFn({action:"disconnect"})); toast("Google Calendar desconectado"); }catch(e){ toast("No se pudo desconectar: "+(e.message||e)); }
   if($(".sheet h2")?.textContent==="Mi cuenta") profileModal(); render(); }
 async function gcSync(){ toast("Sincronizando con Google Calendar…");
-  try{ const n=await gcFn({action:"sync"}); gcSet(n); GC.range=""; gcEvents();
+  try{ const n=await gcFn({action:"sync"}); gcSet(n);
     toast(n.creadas||n.actualizadas||n.quitadas?`Google Calendar actualizado: ${[n.creadas&&n.creadas+" "+(n.creadas===1?"tarea nueva":"tareas nuevas"),n.actualizadas&&n.actualizadas+" "+(n.actualizadas===1?"cambio":"cambios"),n.quitadas&&n.quitadas+" "+(n.quitadas===1?"quitada":"quitadas")].filter(Boolean).join(", ")}`:"Google Calendar al día"); }
   catch(e){ toast("No se pudo sincronizar: "+(e.message||e)); } }
 /* al volver de autorizar en Google */
 function gcReturn(){ const m=location.hash.match(/^#gcal-(\w+)$/); if(!m) return; history.replaceState(null,"",location.pathname+location.search);
   const msg={ok:"Google Calendar conectado. Tus tareas con fecha ya están en el calendario «Gabinete» de tu Google.",cancelado:"No se conectó Google Calendar.",
-    permisos:"Para conectar Google Calendar hay que dejar marcados los dos permisos que pide Google. Probá de nuevo.",error:"No se pudo conectar Google Calendar. Probá de nuevo."}[m[1]]||"";
+    permisos:"Para conectar Google Calendar hay que dejar marcado el permiso que pide Google. Probá de nuevo.",error:"No se pudo conectar Google Calendar. Probá de nuevo."}[m[1]]||"";
   if(m[1]==="ok"){ S.view="cal"; } if(msg) setTimeout(()=>toast(msg),900); }
-const gcCol=e=>/^#[0-9a-f]{3,8}$/i.test(e.col||"")?e.col:"var(--accent)";
-const gcTime=e=>e.h?(e.hf&&e.hf!==e.h?e.h+"–"+e.hf:e.h):"Todo el día";
-function gcByDay(){ const by={}; if(!gcOn()) return by;
-  GC.ev.forEach(e=>{ if(!e||!e.s) return; let d=e.s; for(let i=0;i<45&&d<=(e.e||e.s);i++,d=addD(d,1)) (by[d]=by[d]||[]).push(e); });
-  return by; }
 function gcAccountHTML(){
   if(GC.st==="ok") return `<div class="row"><span class="pill" style="background:var(--okbg);color:var(--ok)">${ic("cal")}Conectado</span><span class="muted small" style="font-weight:400;flex:1;min-width:140px;overflow-wrap:anywhere">${esc(GC.email)}${GC.error?` · <b style="color:var(--bad)">${esc(GC.error)}</b>`:""}</span><button class="btn ghost sm" data-act="gcSync">${ic("sync")}Sincronizar</button><button class="btn ghost sm" data-act="gcOff">Desconectar</button></div>`;
-  if(GC.st==="off") return `<div class="row"><span class="muted small" style="font-weight:400;flex:1;min-width:180px">Tus tareas con fecha aparecen en tu Google Calendar y tus eventos de Google se ven en el Calendario de Gabinete. Las tareas privadas no se copian.</span><button class="btn pri sm" data-act="gcOn">${ic("cal")}Conectar</button></div>`;
+  if(GC.st==="off") return `<div class="row"><span class="muted small" style="font-weight:400;flex:1;min-width:180px">Tus tareas con fecha aparecen en tu Google Calendar. Las tareas privadas no se copian y tu calendario personal no entra a Gabinete.</span><button class="btn pri sm" data-act="gcOn">${ic("cal")}Conectar</button></div>`;
   return `<span class="muted small" style="font-weight:400">${GC.st?"No disponible en este momento.":"Revisando…"}</span>`; }
 
 /* ---------- avisos por mail ---------- */
@@ -1181,31 +1160,28 @@ V.cal=()=>{
   const base=t=>qMatch(t)&&(!mine||hasA(t,S.meId))&&(!pid||t.projectId===pid);
   const ts=tasksL(t=>t.due&&base(t));
   const by={}; ts.forEach(t=>(by[t.due]=by[t.due]||[]).push(t));
-  if(GC.st==="ok"&&GC.range!==gcRange()) setTimeout(gcEvents);
-  const gby=gcByDay();
   const pName=t=>{const p=D.projects[t.projectId];return p?p.name:"Sin tablero"};
   const groupByBoard=L=>{ const g={}; L.forEach(t=>{(g[t.projectId||""]=g[t.projectId||""]||[]).push(t)});
     const order=[...projectsL(true).map(p=>p.id),""]; return order.filter(k=>g[k]).map(k=>[k,g[k]]); };
   const bHead=(k,n)=>{const p=D.projects[k];return `<h3>${p?`<i class="sw" style="${pc(p)}"></i><span class="k">${esc(p.code||"")}</span>${esc(p.name)}`:`<i class="sw" style="--pc:var(--line)"></i>Sin tablero`}<span class="k">· ${n} ${n===1?"tarea":"tareas"}</span></h3>`};
   let cells="";
   for(let i=0;i<weeks*7;i++){ const d=new Date(y,m,1-sd+i), ds=ymd(d), L=(by[ds]||[]).sort((a,b)=>(a.status==="done")-(b.status==="done")||pName(a).localeCompare(pName(b)));
-    const open=L.filter(t=>t.status!=="done").length, G=gby[ds]||[], gn=Math.min(G.length,L.length?2:3), tn=3-gn, more=L.length+G.length-gn-Math.min(L.length,tn);
+    const open=L.filter(t=>t.status!=="done").length, tn=3, more=L.length-Math.min(L.length,tn);
     const cls=[d.getMonth()!==m?"out":"",ds===T?"today":"",ds===sel?"sel":"",(d.getDay()===0||d.getDay()===6)?"we":""].join(" ");
     cells+=`<div class="d ${cls}" data-drop="day" data-day="${ds}" data-act="calSel" role="button" tabindex="0" aria-label="${esc(longD(ds))}, ${open} pendientes"><span class="dn">${d.getDate()}</span>
-<div class="dchips">${G.slice(0,gn).map(e=>`<div class="cc g" style="--pc:${esc(gcCol(e))}" title="${esc(gcTime(e)+" · "+e.t+" (Google Calendar)")}"><span class="cb">${esc(gcTime(e))}</span><span>${esc(e.t)}</span></div>`).join("")}${L.slice(0,tn).map(t=>{const p=D.projects[t.projectId];return `<div class="cc ${t.status==="done"?"done":""}" data-drag="task" data-id="${esc(t.id)}" data-act="openTask" style="${pc(p)}" title="${esc(pName(t)+" · "+t.title)}"><span class="cb">${esc(p?(p.code?p.code+" · ":"")+p.name:"Sin tablero")}</span><span>${esc(t.title)}</span></div>`}).join("")}${more>0?`<span class="cmore">+${more} más</span>`:""}</div>
-<div class="ddots">${G.slice(0,2).map(e=>`<i style="--pc:${esc(gcCol(e))}"></i>`).join("")}${L.slice(0,6-Math.min(G.length,2)).map(t=>`<i style="${pc(D.projects[t.projectId])}"></i>`).join("")}</div></div>`; }
-  const sl=by[sel]||[], gsl=gby[sel]||[];
+<div class="dchips">${L.slice(0,tn).map(t=>{const p=D.projects[t.projectId];return `<div class="cc ${t.status==="done"?"done":""}" data-drag="task" data-id="${esc(t.id)}" data-act="openTask" style="${pc(p)}" title="${esc(pName(t)+" · "+t.title)}"><span class="cb">${esc(p?(p.code?p.code+" · ":"")+p.name:"Sin tablero")}</span><span>${esc(t.title)}</span></div>`}).join("")}${more>0?`<span class="cmore">+${more} más</span>`:""}</div>
+<div class="ddots">${L.slice(0,6).map(t=>`<i style="${pc(D.projects[t.projectId])}"></i>`).join("")}</div></div>`; }
+  const sl=by[sel]||[];
   const nod=tasksL(t=>!t.due&&t.status!=="done"&&base(t));
   const cnt=id=>tasksL(t=>t.projectId===id&&t.status!=="done"&&qMatch(t)&&(!mine||hasA(t,S.meId))).length;
   const legend=projectsL().map(p=>`<button data-act="calProj" data-pid="${esc(p.id)}" aria-pressed="${pid===p.id}" title="Ver solo ${esc(p.name)}"><i class="sw" style="${pc(p)}"></i><span>${esc(p.name)}</span><span class="k">${cnt(p.id)}</span></button>`).join("");
   return `<div class="calbar"><button class="icon-btn" data-act="calNav" data-d="-1" aria-label="Mes anterior">${ic("chevl")}</button><h2>${MES[m]} ${y}</h2><button class="icon-btn" data-act="calNav" data-d="1" aria-label="Mes siguiente">${ic("chev")}</button>
-<button class="btn sm" data-act="calToday">Hoy</button><span class="sp"></span>${GC.st==="ok"?`<button class="btn sm ${gcOn()?"":"ghost"}" data-act="gcToggle" aria-pressed="${gcOn()}" title="Mostrar u ocultar los eventos de Google Calendar">${ic("cal")}Google Calendar</button><button class="icon-btn" data-act="gcSync" aria-label="Sincronizar con Google Calendar" title="Sincronizar con Google Calendar${GC.at?" · eventos traídos a las "+hm(GC.at):""}">${ic("sync")}</button>`:GC.st==="off"?`<button class="btn sm ghost" data-act="gcOn" title="Ver tus eventos de Google acá y tus tareas en tu Google Calendar">${ic("cal")}Conectar Google Calendar</button>`:""}<button class="btn sm ${mine?"":"ghost"}" data-act="calMine" aria-pressed="${mine}">${ic("user")}Solo mis tareas</button></div>
+<button class="btn sm" data-act="calToday">Hoy</button><span class="sp"></span>${GC.st==="ok"?`<button class="icon-btn" data-act="gcSync" aria-label="Sincronizar con Google Calendar" title="Sincronizar mis tareas con Google Calendar">${ic("sync")}</button>`:GC.st==="off"?`<button class="btn sm ghost" data-act="gcOn" title="Ver tus tareas con fecha en tu Google Calendar">${ic("cal")}Conectar Google Calendar</button>`:""}<button class="btn sm ${mine?"":"ghost"}" data-act="calMine" aria-pressed="${mine}">${ic("user")}Solo mis tareas</button></div>
 ${legend?`<div class="legend ${pid?"filtering":""}" role="group" aria-label="Filtrar por tablero">${legend}${pid?`<button data-act="calProj" data-pid="" aria-pressed="false" style="opacity:1">${ic("x")}<span>Ver todos</span></button>`:""}</div>`:""}
 <div class="cal">${["Lun","Mar","Mié","Jue","Vie","Sáb","Dom"].map(x=>`<div class="dw">${x}</div>`).join("")}${cells}</div>
 <div class="daypanel"><div class="sec-h"><h2 style="text-transform:capitalize">${esc(longD(sel))}</h2><span class="muted small">${sl.length} ${sl.length===1?"tarea":"tareas"}</span><span class="sp"></span>${canEdit()?`<button class="btn sm pri" data-act="newTask" data-due="${sel}">${ic("plus")}Tarea para este día</button>`:""}</div>
 ${sl.length?groupByBoard(sl).map(([k,L])=>`<div class="bgroup">${bHead(k,L.length)}<div class="daylist">${L.map(t=>cardHTML(t,{showProj:false})).join("")}</div></div>`).join(""):`<p class="muted small" style="margin:0">Nada vence este día.</p>`}
-${gcOn()?`<div class="bgroup"><h3><i class="sw" style="--pc:var(--ink3)"></i>Google Calendar<span class="k">· ${gsl.length} ${gsl.length===1?"evento":"eventos"}</span><span class="sp"></span><a class="muted small" href="https://calendar.google.com/calendar/r/day/${sel.replace(/-0?/g,"/")}" target="_blank" rel="noopener">Abrir en Google</a></h3>
-${gsl.length?`<div class="gclist">${gsl.map(e=>`<div class="gcrow" style="--pc:${esc(gcCol(e))}"><span class="tm">${esc(e.s!==e.e?(e.s===sel&&e.h?"Desde "+e.h:e.e===sel&&e.hf?"Hasta "+e.hf:"Todo el día"):gcTime(e))}</span><span class="tx"><b>${esc(e.t)}</b><span class="muted small">${esc([e.l,e.c].filter(Boolean).join(" · "))}</span></span></div>`).join("")}</div>`:`<p class="muted small" style="margin:0">Sin eventos en Google Calendar este día.</p>`}</div>`:""}</div>
+</div>
 <div class="nodate"><div class="sec-h"><h2>Pendientes sin fecha</h2><span class="muted small">${nod.length} ${nod.length===1?"tarea":"tareas"} por tablero. Arrastrá cualquiera a un día del calendario para ponerle fecha.</span></div>
 ${nod.length?groupByBoard(nod).map(([k,L])=>`<div class="bgroup">${bHead(k,L.length)}<div class="daylist">${L.map(t=>cardHTML(t,{showProj:false})).join("")}</div></div>`).join(""):`<p class="muted small" style="margin:0">Todas las tareas pendientes tienen fecha.</p>`}</div>`;
 };
@@ -1669,7 +1645,6 @@ document.addEventListener("click",e=>{
     case "calToday": { const n=new Date(); S.cal.y=n.getFullYear(); S.cal.m=n.getMonth(); S.cal.sel=TODAY(); render(); break; }
     case "calSel": S.cal.sel=ds.day; { const d=pYmd(ds.day); if(d.getMonth()!==S.cal.m){S.cal.m=d.getMonth();S.cal.y=d.getFullYear()} } render(); if(innerWidth<=820) $(".daypanel")?.scrollIntoView({behavior:"smooth",block:"start"}); break;
     case "calMine": S.cal.mine=!S.cal.mine; render(); break;
-    case "gcToggle": ls.set("gab.gcal",gcOn()?"off":"on"); render(); break;
     case "gcSync": gcSync(); break;
     case "gcOn": gcConnect(); break;
     case "gcOff": gcDisconnect(); break;
