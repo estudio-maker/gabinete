@@ -25,7 +25,6 @@ function doGet() {
 function doPost(e) {
   try {
     var pedido = JSON.parse(e.postData.contents || '{}');
-    if (pedido.action === 'gcal') return salida(calendario(pedido)); // Calendario.gs
     var token = pedido.token;
     var taskId = String(pedido.taskId || '');
     if (!token || !/^[0-9a-f-]{36}$/.test(taskId)) return salida({ ok: false, error: 'Pedido inválido' });

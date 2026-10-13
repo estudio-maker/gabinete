@@ -12,14 +12,15 @@ Solo pueden entrar los mails que un administrador cargó en **Equipo → Gestion
 
 ## Google Calendar
 
-El calendario se sincroniza con el Google Calendar de la cuenta que publica el Apps Script de avisos
-(`google-apps-script/`, cuenta estudio@perezramirezarquitectura.com). Solo lo ve quien entra a Gabinete
-con ese mismo mail:
+Cada persona conecta su propia cuenta de Google en **Mi cuenta** (o con el botón del **Calendario**):
 
-- Sus eventos de Google aparecen en **Calendario** (botón *Google Calendar* para mostrarlos u ocultarlos).
-- Sus tareas abiertas con fecha se copian a un calendario **Gabinete** de su Google Calendar. Se actualizan
-  al cambiarlas (desde cualquier usuario, mientras tenga Gabinete abierto) y se quitan al terminarlas.
+- Sus tareas abiertas con fecha (no privadas) se copian a un calendario **Gabinete** de su Google Calendar.
+  Cuando cualquiera del equipo cambia la fecha, el título, el tablero o los responsables, se actualiza
+  el calendario de cada responsable. Al terminar, borrar, quitar la fecha o marcar privada, se quita.
+- Sus eventos de Google se ven en el **Calendario** de Gabinete (botón *Google Calendar* para mostrarlos u ocultarlos).
 
-Para activarlo: en el proyecto de Apps Script agregar el archivo `Calendario.gs`, reemplazar `Avisos.gs`,
-y en *Implementar → Gestionar implementaciones* editar la implementación existente con **Versión nueva**
-(así la URL no cambia). Google pide autorizar el permiso de Calendar una vez.
+Piezas: función `supabase/functions/gcal` (Verify JWT desactivado; secretos `GOOGLE_CLIENT_ID` y
+`GOOGLE_CLIENT_SECRET` de un cliente OAuth "Aplicación web" de Google Cloud con la API de Calendar habilitada
+y como URI de redirección `https://upvcwajccsmnqqvltgxp.supabase.co/functions/v1/gcal`) y `supabase/08_google_calendar.sql`
+(tablas, disparador sobre tareas y revisión cada 30 minutos). La pantalla de consentimiento de Google tiene que estar
+publicada ("En producción"); en modo de prueba Google corta el permiso a los 7 días.
