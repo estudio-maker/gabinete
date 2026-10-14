@@ -550,11 +550,13 @@ const APP_URL=location.origin+location.pathname.replace(/index\.html$/,"");
 const taskLink=id=>APP_URL+"#tarea-"+id;
 const okMail=v=>/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(v||"").trim());
 const ICON="apple-touch-icon.png";
-const APP_VERSION="2026-10-13.2";
+const APP_VERSION="2026-10-14.1";
 /* Novedades: la más nueva primero. Se muestran solas al entrar a una versión nueva. */
 const CHANGELOG=[
+ {v:"2026-10-14.1",d:"2026-10-14",items:[
+  ["lock","<b>Google Calendar:</b> tus tareas privadas con fecha ahora aparecen en tu Google Calendar, solo en el tuyo (el de quien la creó) y marcadas como evento privado. Nunca le llegan a otra persona."]]},
  {v:"2026-10-13.2",d:"2026-10-13",items:[
-  ["cal","<b>Google Calendar:</b> conectá tu cuenta de Google en <b>Mi cuenta</b> o en el <b>Calendario</b>. Tus tareas con fecha aparecen solas en un calendario «Gabinete» de tu Google Calendar y se actualizan cuando cualquiera del equipo les cambia la fecha. Las tareas privadas no se copian, y lo que tengas en tu calendario personal no entra a Gabinete."],
+  ["cal","<b>Google Calendar:</b> conectá tu cuenta de Google en <b>Mi cuenta</b> o en el <b>Calendario</b>. Tus tareas con fecha aparecen solas en un calendario «Gabinete» de tu Google Calendar y se actualizan cuando cualquiera del equipo les cambia la fecha. Lo que tengas en tu calendario personal no entra a Gabinete."],
   ["cal","Si en el celular no ves las tareas, activá el calendario «Gabinete» en la lista de calendarios de tu app de calendario."]]},
  {v:"2026-10-12.2",d:"2026-10-12",items:[
   ["ctl","<b>Control del equipo</b> (solo administradores): una pestaña con el resumen de cada persona (abiertas, en curso, vencidas, vencen hoy, próximos 7 días, sin fecha y terminadas) y sus tareas con un toque. Se puede filtrar por tablero."]]},
@@ -758,7 +760,7 @@ function deleteTask(id){ if(!canEdit()) return; const t=DATA().tasks[id]; if(!t)
 
 /* ---------- Google Calendar ----------
    Cada persona conecta su propia cuenta de Google (Mi cuenta o el Calendario). La función "gcal" de
-   Supabase copia sus tareas con fecha (no privadas) a un calendario "Gabinete" de su Google Calendar y
+   Supabase copia sus tareas con fecha (las privadas, solo a quien la creó) a un calendario "Gabinete" de su Google Calendar y
    las mantiene al día cuando cualquiera del equipo las cambia. Acá se muestran sus eventos de Google. */
 const GCAL_FN=SUPA_URL+"/functions/v1/gcal";
 const GC={st:"",email:"",error:""};
@@ -782,7 +784,7 @@ function gcReturn(){ const m=location.hash.match(/^#gcal-(\w+)$/); if(!m) return
   if(m[1]==="ok"){ S.view="cal"; } if(msg) setTimeout(()=>toast(msg),900); }
 function gcAccountHTML(){
   if(GC.st==="ok") return `<div class="row"><span class="pill" style="background:var(--okbg);color:var(--ok)">${ic("cal")}Conectado</span><span class="muted small" style="font-weight:400;flex:1;min-width:140px;overflow-wrap:anywhere">${esc(GC.email)}${GC.error?` · <b style="color:var(--bad)">${esc(GC.error)}</b>`:""}</span><button class="btn ghost sm" data-act="gcSync">${ic("sync")}Sincronizar</button><button class="btn ghost sm" data-act="gcOff">Desconectar</button></div>`;
-  if(GC.st==="off") return `<div class="row"><span class="muted small" style="font-weight:400;flex:1;min-width:180px">Tus tareas con fecha aparecen en tu Google Calendar. Las tareas privadas no se copian y tu calendario personal no entra a Gabinete.</span><button class="btn pri sm" data-act="gcOn">${ic("cal")}Conectar</button></div>`;
+  if(GC.st==="off") return `<div class="row"><span class="muted small" style="font-weight:400;flex:1;min-width:180px">Tus tareas con fecha aparecen en tu Google Calendar. Tus tareas privadas aparecen solo en tu calendario y tu calendario personal no entra a Gabinete.</span><button class="btn pri sm" data-act="gcOn">${ic("cal")}Conectar</button></div>`;
   return `<span class="muted small" style="font-weight:400">${GC.st?"No disponible en este momento.":"Revisando…"}</span>`; }
 
 /* ---------- avisos por mail ---------- */
