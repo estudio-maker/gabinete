@@ -17,6 +17,7 @@ Cada persona conecta su propia cuenta de Google en **Mi cuenta** (o con el botó
 - Sus tareas abiertas con fecha se copian a un calendario **Gabinete** de su Google Calendar. Las privadas van solo al calendario de quien la creó, como evento privado.
   Cuando cualquiera del equipo cambia la fecha, el título, el tablero o los responsables, se actualiza
   el calendario de cada responsable. Al terminar, borrar o quitar la fecha, se quita.
+- Si la tarea tiene hora (opcional, `supabase/09_hora_de_tarea.sql`), el evento va en ese horario (una hora) con un aviso a esa hora; si no, es de todo el día.
 - Va solo de Gabinete a Google: los eventos del calendario personal no entran a Gabinete.
 
 Piezas: función `supabase/functions/gcal` (Verify JWT desactivado; secretos `GOOGLE_CLIENT_ID` y

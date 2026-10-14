@@ -550,9 +550,11 @@ const APP_URL=location.origin+location.pathname.replace(/index\.html$/,"");
 const taskLink=id=>APP_URL+"#tarea-"+id;
 const okMail=v=>/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(v||"").trim());
 const ICON="apple-touch-icon.png";
-const APP_VERSION="2026-10-14.1";
+const APP_VERSION="2026-10-14.2";
 /* Novedades: la más nueva primero. Se muestran solas al entrar a una versión nueva. */
 const CHANGELOG=[
+ {v:"2026-10-14.2",d:"2026-10-14",items:[
+  ["clock","<b>Hora de la tarea:</b> al poner la fecha podés sumar la hora en que vence o en que es (es opcional). Se ve en las tarjetas y en el Calendario, y en Google Calendar aparece en ese horario con un aviso a esa hora."]]},
  {v:"2026-10-14.1",d:"2026-10-14",items:[
   ["lock","<b>Google Calendar:</b> tus tareas privadas con fecha ahora aparecen en tu Google Calendar, solo en el tuyo (el de quien la creó) y marcadas como evento privado. Nunca le llegan a otra persona."]]},
  {v:"2026-10-13.2",d:"2026-10-13",items:[
@@ -678,18 +680,18 @@ const qMatch=t=>{ if(!S.q) return true; const q=S.q.toLowerCase(); const p=DATA(
 
 function dueInfo(t){ if(!t.due) return null; const d=dayDiff(t.due,TODAY());
   const c=t.status==="done"?"":d<0?"over":d===0?"today":"";
-  const l=d===0?"Hoy":d===1?"Mañana":d===-1?"Ayer":fmtD(t.due); return {c,l,d}; }
+  const l=(d===0?"Hoy":d===1?"Mañana":d===-1?"Ayer":fmtD(t.due))+(t.dueTime?" · "+t.dueTime:""); return {c,l,d}; }
 
 /* ---------- escritura (Supabase) ---------- */
 let sb=null;
 const KM={
   members:{name:"name",role:"role",color:"color",email:"email",isAdmin:"is_admin",order:"sort_order",uid:"user_id"},
   projects:{name:"name",kind:"kind",code:"code",client:"client",place:"place",color:"color",archived:"archived",order:"sort_order",team:"team",lead:"lead",createdBy:"created_by",createdAt:"created_at"},
-  tasks:{title:"title",notes:"notes",projectId:"project_id",assigneeId:"assignee_id",status:"status",prio:"prio",due:"due",etapa:"etapa",checklist:"checklist",providers:"providers",coAssignees:"co_assignees",private:"private",order:"sort_order",createdBy:"created_by",createdAt:"created_at",updatedAt:"updated_at",doneAt:"done_at"},
+  tasks:{title:"title",notes:"notes",projectId:"project_id",assigneeId:"assignee_id",status:"status",prio:"prio",due:"due",dueTime:"due_time",etapa:"etapa",checklist:"checklist",providers:"providers",coAssignees:"co_assignees",private:"private",order:"sort_order",createdBy:"created_by",createdAt:"created_at",updatedAt:"updated_at",doneAt:"done_at"},
   contacts:{name:"name",rubro:"rubro",phone:"phone",email:"email",notes:"notes",createdBy:"created_by",createdAt:"created_at"}};
-const NULLABLE=new Set(["project_id","assignee_id","lead","created_by","user_id","due"]);
+const NULLABLE=new Set(["project_id","assignee_id","lead","created_by","user_id","due","due_time"]);
 const TSC=new Set(["done_at","updated_at","created_at"]);
-const EMPTYSTR=new Set(["projectId","assigneeId","lead","due","createdBy","uid"]);
+const EMPTYSTR=new Set(["projectId","assigneeId","lead","due","dueTime","createdBy","uid"]);
 function toDb(coll,o){ const r={}; for(const [k,v] of Object.entries(o)){ const c=KM[coll][k]; if(!c) continue; let x=v;
   if(NULLABLE.has(c)&&(x===""||x===undefined)) x=null; if(TSC.has(c)) x=x?new Date(x).toISOString():null;
   if(c==="email"&&x) x=String(x).trim().toLowerCase(); r[c]=x; } return r; }
@@ -722,6 +724,7 @@ function createTask(o){
   if(o.providers&&o.providers.length) t.providers=o.providers;
   if(people.length>1) t.coAssignees=people.slice(1);
   if(o.private) t.private=true;
+  if(t.due&&/^\d\d:\d\d$/.test(o.dueTime||"")) t.dueTime=o.dueTime;
   put("tasks",id,t);
   const p=DATA().projects[t.projectId];
   log("create",{taskId:id,title:t.title,projectId:t.projectId,pname:p?p.name:"",to:t.assigneeId,toName:people.map(mName).join(", ")});
@@ -746,7 +749,10 @@ function moveTask(id,ch,quiet){
       const fresh=add.filter(x=>x!==S.meId); if(fresh.length) setTimeout(()=>notifyAssigned(id,fresh),400); } }
   if(ch.projectId!==undefined&&ch.projectId!==t.projectId){ p.projectId=ch.projectId; const np=D.projects[ch.projectId];
     log("project",{...base,from:t.projectId,fromName:base.pname,to:ch.projectId,toName:np?np.name:""}); msgs.push("Movida a "+(np?np.name:"sin tablero")); }
-  if(ch.due!==undefined&&ch.due!==t.due){ p.due=ch.due; log("due",{...base,from:t.due,to:ch.due}); msgs.push(ch.due?"Vence el "+fmtD(ch.due):"Sin fecha"); }
+  if(ch.due!==undefined&&!ch.due&&t.dueTime) ch.dueTime="";
+  const nd=ch.due!==undefined?ch.due:t.due, nt=ch.dueTime!==undefined?ch.dueTime:(t.dueTime||"");
+  if(nd!==t.due||nt!==(t.dueTime||"")){ if(nd!==t.due) p.due=nd; if(nt!==(t.dueTime||"")) p.dueTime=nt;
+    log("due",{...base,from:t.due,to:nd,time:nt}); msgs.push(nd?"Vence el "+fmtD(nd)+(nt?" a las "+nt:""):"Sin fecha"); }
   if(ch.private===false&&t.private){ p.private=false; log("priv",{...base,to:false}); msgs.push("Ahora la ve todo el equipo"); }
   if(ch.order!==undefined&&ch.order!==t.order) p.order=ch.order;
   if(!Object.keys(p).length) return;
@@ -1167,11 +1173,11 @@ V.cal=()=>{
     const order=[...projectsL(true).map(p=>p.id),""]; return order.filter(k=>g[k]).map(k=>[k,g[k]]); };
   const bHead=(k,n)=>{const p=D.projects[k];return `<h3>${p?`<i class="sw" style="${pc(p)}"></i><span class="k">${esc(p.code||"")}</span>${esc(p.name)}`:`<i class="sw" style="--pc:var(--line)"></i>Sin tablero`}<span class="k">· ${n} ${n===1?"tarea":"tareas"}</span></h3>`};
   let cells="";
-  for(let i=0;i<weeks*7;i++){ const d=new Date(y,m,1-sd+i), ds=ymd(d), L=(by[ds]||[]).sort((a,b)=>(a.status==="done")-(b.status==="done")||pName(a).localeCompare(pName(b)));
+  for(let i=0;i<weeks*7;i++){ const d=new Date(y,m,1-sd+i), ds=ymd(d), L=(by[ds]||[]).sort((a,b)=>(a.status==="done")-(b.status==="done")||(a.dueTime||"99").localeCompare(b.dueTime||"99")||pName(a).localeCompare(pName(b)));
     const open=L.filter(t=>t.status!=="done").length, tn=3, more=L.length-Math.min(L.length,tn);
     const cls=[d.getMonth()!==m?"out":"",ds===T?"today":"",ds===sel?"sel":"",(d.getDay()===0||d.getDay()===6)?"we":""].join(" ");
     cells+=`<div class="d ${cls}" data-drop="day" data-day="${ds}" data-act="calSel" role="button" tabindex="0" aria-label="${esc(longD(ds))}, ${open} pendientes"><span class="dn">${d.getDate()}</span>
-<div class="dchips">${L.slice(0,tn).map(t=>{const p=D.projects[t.projectId];return `<div class="cc ${t.status==="done"?"done":""}" data-drag="task" data-id="${esc(t.id)}" data-act="openTask" style="${pc(p)}" title="${esc(pName(t)+" · "+t.title)}"><span class="cb">${esc(p?(p.code?p.code+" · ":"")+p.name:"Sin tablero")}</span><span>${esc(t.title)}</span></div>`}).join("")}${more>0?`<span class="cmore">+${more} más</span>`:""}</div>
+<div class="dchips">${L.slice(0,tn).map(t=>{const p=D.projects[t.projectId];return `<div class="cc ${t.status==="done"?"done":""}" data-drag="task" data-id="${esc(t.id)}" data-act="openTask" style="${pc(p)}" title="${esc(pName(t)+" · "+t.title)}"><span class="cb">${esc(p?(p.code?p.code+" · ":"")+p.name:"Sin tablero")}</span><span>${esc((t.dueTime?t.dueTime+" ":"")+t.title)}</span></div>`}).join("")}${more>0?`<span class="cmore">+${more} más</span>`:""}</div>
 <div class="ddots">${L.slice(0,6).map(t=>`<i style="${pc(D.projects[t.projectId])}"></i>`).join("")}</div></div>`; }
   const sl=by[sel]||[];
   const nod=tasksL(t=>!t.due&&t.status!=="done"&&base(t));
@@ -1200,7 +1206,7 @@ function hSentence(e){ const D=DATA(); const who=`<b>${esc(mName(e.actor)||e.act
     case "priv": return ["",e.to?"Privada":"Visible",`${who} ${e.to?"marcó como <b>privada</b>":"hizo visible para todo el equipo"} ${tt}`];
     case "asgadd": return ["move","Asignación",`${who} sumó a <b>${esc(mName(e.to)||e.toName||"")}</b> como responsable de ${tt}`];
     case "asgrm": return ["move","Asignación",`${who} quitó a ${esc(mName(e.to)||e.toName||"")} como responsable de ${tt}`];
-    case "due": return ["","Fecha",`${who} cambió el vencimiento de ${tt} a <b>${e.to?esc(fmtD(e.to)):"sin fecha"}</b>`];
+    case "due": return ["","Fecha",`${who} cambió el vencimiento de ${tt} a <b>${e.to?esc(fmtD(e.to)+(e.time?" a las "+e.time:"")):"sin fecha"}</b>`];
     case "edit": return ["","Edición",`${who} editó ${esc(e.what||"")} en ${tt}`];
     case "check": return ["done","Checklist",`${who} completó «${esc(e.item||"")}» en ${tt}`];
     case "delete": return ["del","Eliminada",`${who} eliminó ${tt}${e.pname?` de ${esc(e.pname)}`:""}`];
@@ -1345,6 +1351,7 @@ ${t.private?`<p class="banner ro" style="margin:0;display:flex;gap:8px;align-ite
 <div class="g2">
 <label class="fld"><span>Tablero (obra o proyecto)</span><select class="inp" id="f-proj" data-f="projectId" ${dis}>${projOpts(t.projectId)}</select></label>
 <label class="fld"><span>Vence</span><input class="inp" type="date" id="f-due" data-f="due" value="${esc(t.due||"")}" ${dis}></label>
+<label class="fld"><span>Hora <span class="muted" style="font-weight:400">opcional</span></span><input class="inp" type="time" id="f-due-time" data-f="dueTime" value="${esc(t.dueTime||"")}" ${t.due?dis:"disabled"} title="${t.due?"Hora en que vence o en que es la tarea":"Primero elegí la fecha"}"></label>
 <label class="fld"><span>Prioridad</span><select class="inp" id="f-prio" data-f="prio" ${dis}>${PRIO.map((l,i)=>opt(i,l,(t.prio||0)===i)).join("")}</select></label>
 </div>
 ${!ro&&asg(t).length?(()=>{ const ms=asg(t).map(x=>D.members[x]); const wm=ms.filter(m=>okMail(m.email)); const nm=ms.filter(m=>!okMail(m.email));
@@ -1404,6 +1411,7 @@ function newTaskModal(pre={}){
 <div class="fld"><span>Responsables</span><div id="nt-ppl"></div></div>
 <div class="g2"><label class="fld"><span>Tablero</span><select class="inp" id="nt-proj">${projOpts(pid)}</select></label>
 <label class="fld"><span>Vence</span><input class="inp" type="date" id="nt-due" value="${esc(pre.due||"")}"></label>
+<label class="fld"><span>Hora <span class="muted" style="font-weight:400">opcional</span></span><input class="inp" type="time" id="nt-time"></label>
 <label class="fld"><span>Estado</span><select class="inp" id="nt-st">${STATUS.filter(s=>s.k!=="done").map(s=>opt(s.k,s.n,s.k==="todo")).join("")}</select></label>
 <label class="fld"><span>Prioridad</span><select class="inp" id="nt-prio">${PRIO.map((l,i)=>opt(i,l,!i)).join("")}</select></label>
 <label class="fld"><span>Etapa</span><select class="inp" id="nt-etapa">${opt("","—",1)}${ETAPAS.map(e=>opt(e,e)).join("")}</select></label></div>
@@ -1421,7 +1429,7 @@ function newTaskModal(pre={}){
   const picker=mountPicker($("#nt-pick"),{exclude:()=>sel,onPick:cid=>{ if(!sel.includes(cid)) sel.push(cid); drawSel(); }});
   $("#ntForm").addEventListener("submit",e=>{ e.preventDefault(); const title=$("#nt-title").value.trim(); if(!title){$("#nt-title").focus();return}
     const projectId=$("#nt-proj").value; S.lastPid=projectId||S.lastPid;
-    createTask({title,projectId,assignees:people,private:priv,due:$("#nt-due").value,status:$("#nt-st").value,prio:$("#nt-prio").value,etapa:$("#nt-etapa").value,
+    createTask({title,projectId,assignees:people,private:priv,due:$("#nt-due").value,dueTime:$("#nt-time").value,status:$("#nt-st").value,prio:$("#nt-prio").value,etapa:$("#nt-etapa").value,
       providers:sel.filter(c=>CT()[c]).map(c=>({c,at:Date.now(),ok:false}))});
     closeModal(); toast("Tarea creada"); });
 }
@@ -1677,7 +1685,7 @@ document.addEventListener("change",e=>{
   else if(f==="notes"){ if(v!==(t.notes||"")) editTask(id,{notes:v},"las notas"); }
   else if(f==="prio"){ editTask(id,{prio:+v},"la prioridad"); }
   else if(f==="etapa"){ editTask(id,{etapa:v},"la etapa"); }
-  else if(f==="projectId"||f==="assigneeId"||f==="due"){ moveTask(id,{[f]:v}); if(f==="projectId"||f==="assigneeId") refreshTask(); }
+  else if(f==="projectId"||f==="assigneeId"||f==="due"||f==="dueTime"){ moveTask(id,{[f]:v}); if(f!=="dueTime") refreshTask(); }
   render();
 });
 

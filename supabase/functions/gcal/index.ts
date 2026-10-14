@@ -104,6 +104,16 @@ const wanted = (t) => t && t.due && t.status !== "done";
 const owner = (t) => t.created_by || t.assignee_id;
 // Quiénes la tienen en su Google: los responsables. Una tarea privada, solo quien la creó.
 const audience = (t) => !wanted(t) ? [] : t.private ? [owner(t)].filter(Boolean) : resp(t);
+// Con hora: un bloque de una hora en ese horario, con aviso a esa hora. Sin hora: todo el día.
+const HM = /^\d{2}:\d{2}/;
+function when(t) {
+  if (!HM.test(t.due_time || "")) return { start: { date: t.due }, end: { date: addDay(t.due) }, reminders: { useDefault: true } };
+  const a = new Date(`${t.due}T${t.due_time.slice(0, 5)}:00Z`), b = new Date(a.getTime() + 3600e3);
+  const f = (d) => d.toISOString().slice(0, 19);
+  // Aviso del celular a esa misma hora
+  return { start: { dateTime: f(a), timeZone: TZ }, end: { dateTime: f(b), timeZone: TZ },
+    reminders: { useDefault: false, overrides: [{ method: "popup", minutes: 0 }] } };
+}
 async function hash(s) { return b64u(await crypto.subtle.digest("SHA-256", te.encode(s))).slice(0, 22); }
 async function eventBody(t, projs, members) {
   const p = projs[t.project_id];
@@ -111,7 +121,7 @@ async function eventBody(t, projs, members) {
   const who = resp(t).map(id => members[id]).filter(Boolean).join(", ");
   const description = `Tarea de Gabinete\nTablero: ${p ? (p.code ? p.code + " · " : "") + p.name : "Sin tablero"}\nEstado: ${STATUS[t.status] || t.status}` + (t.private ? "\nTarea privada" : "") +
     (who ? `\nResponsables: ${who}` : "") + (t.notes ? `\nNotas: ${String(t.notes).slice(0, 500)}` : "") + `\n\nAbrir la tarea: ${APP}#tarea-${t.id}`;
-  const body = { summary, description, start: { date: t.due }, end: { date: addDay(t.due) }, transparency: "transparent",
+  const body = { summary, description, ...when(t), transparency: "transparent",
     source: { title: "Gabinete", url: APP + "#tarea-" + t.id }, extendedProperties: { private: { gabinete: t.id } } };
   if (t.private) body.visibility = "private";
   return { body, huella: await hash(JSON.stringify(body)) };
@@ -141,7 +151,7 @@ async function dropEvent(acc, row) {
   }
   await rest(`gcal_eventos?task_id=eq.${row.task_id}&member_id=eq.${row.member_id}`, { method: "DELETE" });
 }
-const TASK_COLS = "id,title,notes,due,status,private,project_id,assignee_id,co_assignees,created_by";
+const TASK_COLS = "id,title,notes,due,status,private,project_id,assignee_id,co_assignees,created_by,due_time";
 
 /** Sincroniza todas las tareas de una persona conectada. */
 async function syncMember(acc) {
