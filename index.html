@@ -230,7 +230,7 @@ button.stat[aria-pressed="true"]{border-color:var(--accent);box-shadow:0 0 0 3px
 .pcard:hover{border-color:var(--ink3)}
 .pcard.dragging{opacity:.3}
 .pcard.drop-on{border-color:var(--accent);box-shadow:0 0 0 3px var(--accentbg)}
-.pcard.arch{opacity:.6}
+.pcard.arch{opacity:.6} .card.arch{opacity:.55}
 .pcard .hd{display:flex;gap:10px;align-items:flex-start}
 .pcard .hd .nm{flex:1;min-width:0;display:grid;gap:2px}
 .pcard h3{font-size:16px;overflow-wrap:anywhere}
@@ -550,9 +550,12 @@ const APP_URL=location.origin+location.pathname.replace(/index\.html$/,"");
 const taskLink=id=>APP_URL+"#tarea-"+id;
 const okMail=v=>/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(v||"").trim());
 const ICON="apple-touch-icon.png";
-const APP_VERSION="2026-10-14.2";
+const APP_VERSION="2026-10-14.3";
 /* Novedades: la más nueva primero. Se muestran solas al entrar a una versión nueva. */
 const CHANGELOG=[
+ {v:"2026-10-14.3",d:"2026-10-14",items:[
+  ["archive","<b>Archivar tareas terminadas:</b> abrí una tarea terminada y tocá <b>Archivar</b>. Deja de verse en los tableros, Mis tareas y el Calendario, pero no se borra. En el tablero, <b>Ver tareas archivadas</b> la muestra de nuevo y desde ahí la podés desarchivar."],
+  ["trash","<b>Eliminar tablero</b> (solo administradores): en <b>Editar</b> del tablero, botón <b>Eliminar</b>. Borra el tablero y todas sus tareas, y pide confirmación porque no se puede deshacer. Si solo querés sacarlo de la vista, usá <b>Archivar</b>."]]},
  {v:"2026-10-14.2",d:"2026-10-14",items:[
   ["clock","<b>Hora de la tarea:</b> al poner la fecha podés sumar la hora en que vence o en que es (es opcional). Se ve en las tarjetas y en el Calendario, y en Google Calendar aparece en ese horario con un aviso a esa hora."]]},
  {v:"2026-10-14.1",d:"2026-10-14",items:[
@@ -654,7 +657,7 @@ const ic=(k,c="")=>`<svg class="ic ${c}" viewBox="0 0 24 24" fill="none" stroke=
 const now=new Date();
 const S={mode:"boot",db:null,user:null,uid:null,myName:"",meId:null,canWrite:true,
   L:{members:{},projects:{},tasks:{},history:[],contacts:{}},D:null,got:{},
-  view:"home",pid:null,q:"",fm:null,showArch:false,teamDone:false,
+  view:"home",pid:null,q:"",fm:null,showArch:false,showArchT:false,teamDone:false,
   cal:{y:now.getFullYear(),m:now.getMonth(),sel:TODAY(),mine:false,pid:""},
   hf:{who:"",proj:""},histOlder:[],histEnd:false,openTask:null,quickOpen:null,mcp:null,myEmail:"",hashTask:(location.hash.match(/^#tarea-([0-9a-f-]{36})$/)||[])[1]||null,homeF:(location.hash.match(/^#ver-(over|today|week|doneW)$/)||[])[1]||null,session:null,isAdmin:false,dirty:false,justDragged:0};
 const DATA=()=>S.mode==="live"?S.L:(S.D||S.L);
@@ -662,7 +665,7 @@ const live=()=>S.mode==="live";
 
 const membersL=()=>Object.values(DATA().members).sort((a,b)=>(a.order||0)-(b.order||0)||String(a.name).localeCompare(b.name));
 const projectsL=(arch=false)=>Object.values(DATA().projects).filter(p=>arch||!p.archived).sort((a,b)=>(a.order||0)-(b.order||0));
-const tasksL=f=>Object.values(DATA().tasks).filter(f).sort((a,b)=>(a.order||0)-(b.order||0));
+const tasksL=(f,arch=false)=>Object.values(DATA().tasks).filter(t=>(arch||!t.archived)&&f(t)).sort((a,b)=>(a.order||0)-(b.order||0));
 const pc=p=>`--pc:var(--c${((p&&p.color)||0)%NC})`;
 const pTeam=p=>((p&&p.team)||[]).filter(id=>DATA().members[id]);
 const mName=id=>(DATA().members[id]||{}).name||"";
@@ -687,7 +690,7 @@ let sb=null;
 const KM={
   members:{name:"name",role:"role",color:"color",email:"email",isAdmin:"is_admin",order:"sort_order",uid:"user_id"},
   projects:{name:"name",kind:"kind",code:"code",client:"client",place:"place",color:"color",archived:"archived",order:"sort_order",team:"team",lead:"lead",createdBy:"created_by",createdAt:"created_at"},
-  tasks:{title:"title",notes:"notes",projectId:"project_id",assigneeId:"assignee_id",status:"status",prio:"prio",due:"due",dueTime:"due_time",etapa:"etapa",checklist:"checklist",providers:"providers",coAssignees:"co_assignees",private:"private",order:"sort_order",createdBy:"created_by",createdAt:"created_at",updatedAt:"updated_at",doneAt:"done_at"},
+  tasks:{title:"title",notes:"notes",projectId:"project_id",assigneeId:"assignee_id",status:"status",prio:"prio",due:"due",dueTime:"due_time",etapa:"etapa",checklist:"checklist",providers:"providers",coAssignees:"co_assignees",private:"private",archived:"archived",order:"sort_order",createdBy:"created_by",createdAt:"created_at",updatedAt:"updated_at",doneAt:"done_at"},
   contacts:{name:"name",rubro:"rubro",phone:"phone",email:"email",notes:"notes",createdBy:"created_by",createdAt:"created_at"}};
 const NULLABLE=new Set(["project_id","assignee_id","lead","created_by","user_id","due","due_time"]);
 const TSC=new Set(["done_at","updated_at","created_at"]);
@@ -736,7 +739,7 @@ function moveTask(id,ch,quiet){
   if(!canEdit()){ toast("Tenés acceso de solo lectura."); return; }
   const t=DATA().tasks[id]; if(!t) return; const p={}; const D=DATA(); const base={taskId:id,title:t.title,projectId:t.projectId,pname:(D.projects[t.projectId]||{}).name||""};
   const msgs=[];
-  if(ch.status!==undefined&&ch.status!==t.status){ p.status=ch.status; p.doneAt=ch.status==="done"?Date.now():null;
+  if(ch.status!==undefined&&ch.status!==t.status){ p.status=ch.status; p.doneAt=ch.status==="done"?Date.now():null; if(ch.status!=="done"&&t.archived) p.archived=false;
     const type=ch.status==="done"?"done":t.status==="done"?"reopen":"status";
     log(type,{...base,from:t.status,to:ch.status}); msgs.push(ch.status==="done"?"Tarea terminada":"Movida a "+SN[ch.status]); }
   if(ch.assigneeId!==undefined&&ch.assignees===undefined){ const cur=asg(t); ch.assignees=ch.assigneeId?[ch.assigneeId,...cur.slice(1).filter(x=>x!==ch.assigneeId)]:[]; }
@@ -762,6 +765,13 @@ function moveTask(id,ch,quiet){
 }
 function editTask(id,p,what){ if(!canEdit()) return toast("Tenés acceso de solo lectura."); const t=DATA().tasks[id]; if(!t) return;
   patch("tasks",id,{...p,updatedAt:Date.now()}); if(what) log("edit",{taskId:id,title:p.title||t.title,projectId:t.projectId,what}); }
+function archiveTask(id,on){ if(!canEdit()) return; const t=DATA().tasks[id]; if(!t||(on&&t.status!=="done")) return;
+  patch("tasks",id,{archived:!!on,updatedAt:Date.now()}); log("tarch",{taskId:id,title:t.title,projectId:t.projectId,pname:(DATA().projects[t.projectId]||{}).name||"",to:!!on}); toast(on?"Tarea archivada":"Tarea desarchivada"); }
+function deleteProject(pid){ const D=DATA(), p=D.projects[pid]; if(!p||!S.isAdmin) return;
+  const ts=Object.values(D.tasks).filter(t=>t.projectId===pid);
+  ts.forEach(t=>del("tasks",t.id));
+  Promise.all(ts.map(t=>chains["tasks/"+t.id])).then(()=>del("projects",pid));
+  log("pdel",{pname:p.name,n:ts.length}); toast("Tablero eliminado"); }
 function deleteTask(id){ if(!canEdit()) return; const t=DATA().tasks[id]; if(!t) return; log("delete",{taskId:id,title:t.title,projectId:t.projectId,pname:(DATA().projects[t.projectId]||{}).name||""}); del("tasks",id); toast("Tarea eliminada"); }
 
 /* ---------- Google Calendar ----------
@@ -863,7 +873,7 @@ function avHTML(m,cls=""){ if(!m) return `<span class="av none ${cls}" title="Si
 function projChip(p){ return `<span class="chip"><i class="sw" style="${pc(p)}"></i><span class="cd">${esc(p.code||"")}</span><span class="cn">${esc(p.name)}</span></span>`; }
 function cardHTML(t,o={}){ const D=DATA(), p=D.projects[t.projectId], ms=asg(t).map(x=>D.members[x]), m=ms[0];
   const showP=o.showProj!==false&&p, di=dueInfo(t), cl=t.checklist||[], cd=cl.filter(x=>x.d).length, done=t.status==="done";
-  return `<article class="card ${done?"done":""} ${t.private?"is-priv":""}" data-drag="task" data-id="${esc(t.id)}" data-act="openTask" tabindex="0" aria-label="${esc(t.title)}">
+  return `<article class="card ${done?"done":""} ${t.archived?"arch":""} ${t.private?"is-priv":""}" data-drag="task" data-id="${esc(t.id)}" data-act="openTask" tabindex="0" aria-label="${esc(t.title)}">
 ${showP||t.etapa||t.private?`<div class="meta">${t.private?`<span class="priv-b" title="Privada: solo la ven quien la creó y los responsables">${ic("lock")}Privada</span>`:""}${showP?projChip(p):""}${t.etapa?`<span class="tag">${esc(t.etapa)}</span>`:""}</div>`:""}
 <div class="ttl"><button class="chk ${done?"on":""}" data-act="toggle" data-id="${esc(t.id)}" aria-label="${done?"Marcar como pendiente":"Marcar como terminada"}" title="${done?"Reabrir":"Terminar"}">${ic("check")}</button><span class="t">${esc(t.title)}</span></div>
 <div class="foot">${di?`<span class="due ${di.c}">${ic("clock")}${esc(di.l)}</span>`:""}${t.prio?`<span class="prio p${t.prio}">${ic("flag")}${PRIO[t.prio]}</span>`:""}${cl.length?`<span class="cl ${cd===cl.length?"full":""}">${ic("list")}${cd}/${cl.length}</span>`:""}${t.notes?`<span class="dim" title="Tiene notas">${ic("note")}</span>`:""}${provChip(t)}<span class="sp"></span>${o.showAv===false&&ms.length<2?"":`<button class="avbtn who-tag ${m?"":"none"}" data-act="assignPick" data-id="${esc(t.id)}" aria-label="Responsables: ${ms.length?esc(ms.map(x=>x.name).join(", ")):"sin asignar"}. Tocar para cambiar" title="${ms.length?esc(ms.map(x=>x.name).join(", ")):"Asignar responsables"}"><span class="avst">${ms.length?ms.slice(0,3).map(x=>avHTML(x)).join(""):avHTML(null)}</span><span class="an">${m?esc(first(m.name))+(ms.length>1?" +"+(ms.length-1):""):"Asignar"}</span></button>`}</div>
@@ -1103,12 +1113,14 @@ function pcardHTML(p){ const ts=tasksL(t=>t.projectId===p.id); const done=ts.fil
 </article>`; }
 V.project=()=>{
   const D=DATA(), p=D.projects[S.pid]; if(!p){ S.view="boards"; return V.boards(); }
-  const ts=tasksL(t=>t.projectId===p.id&&qMatch(t)&&(!S.fm||hasA(t,S.fm)));
+  const ts=tasksL(t=>t.projectId===p.id&&qMatch(t)&&(!S.fm||hasA(t,S.fm)),S.showArchT);
+  const narch=Object.values(D.tasks).filter(t=>t.projectId===p.id&&t.archived).length;
   const tm=pTeam(p); const ppl=[...membersL().filter(m=>tm.includes(m.id)||m.id===p.lead),...membersL().filter(m=>!tm.includes(m.id)&&m.id!==p.lead)];
   return `<div class="phead" style="${pc(p)}"><span class="stamp"><small>${p.kind==="proyecto"?"Proy.":"Obra"}</small>${esc(p.code||"—")}</span><div class="nm"><h1>${esc(p.name)}</h1><span class="muted small">${esc([p.client,p.place].filter(Boolean).join(" · ")||"Sin cliente cargado")}${p.archived?" · Archivado":""}</span></div>
 <div class="filters" role="group" aria-label="Filtrar por persona">${ppl.map(m=>`<button class="fav ${S.fm?"dimmed":""}" data-act="fm" data-mid="${esc(m.id)}" aria-pressed="${S.fm===m.id}" title="Ver solo tareas de ${esc(m.name)}">${avHTML(m)}</button>`).join("")}</div>
 ${canEdit()?`<button class="btn sm" data-act="editProj" data-pid="${esc(p.id)}">${ic("edit")}Editar</button>`:""}</div>
 ${pteamHTML(p)}
+${narch?`<div class="row"><span class="sp"></span><button class="btn ghost sm" data-act="toggleArchT">${ic("archive")}${S.showArchT?"Ocultar":"Ver"} tareas archivadas (${narch})</button></div>`:""}
 <div class="board">${STATUS.map(s=>colHTML({ck:"p-"+p.id+"-"+s.k,st:s.k,title:s.n,attrs:`data-status="${s.k}" data-project="${esc(p.id)}"`,
   tasks:sortCol(ts.filter(t=>t.status===s.k),s.k),limit:s.k==="done"?15:0,opts:{showProj:false},quick:s.k!=="done"})).join("")}</div>`;
 };
@@ -1210,6 +1222,8 @@ function hSentence(e){ const D=DATA(); const who=`<b>${esc(mName(e.actor)||e.act
     case "edit": return ["","Edición",`${who} editó ${esc(e.what||"")} en ${tt}`];
     case "check": return ["done","Checklist",`${who} completó «${esc(e.item||"")}» en ${tt}`];
     case "delete": return ["del","Eliminada",`${who} eliminó ${tt}${e.pname?` de ${esc(e.pname)}`:""}`];
+    case "tarch": return ["",e.to?"Archivada":"Desarchivada",`${who} ${e.to?"archivó":"desarchivó"} ${tt}`];
+    case "pdel": return ["del","Tablero",`${who} eliminó el tablero <b>${esc(e.pname||"")}</b>${e.n?` y sus ${e.n} ${e.n===1?"tarea":"tareas"}`:""}`];
     case "pcreate": return ["new","Tablero",`${who} creó el tablero <b>${esc(e.pname||"")}</b>`];
     case "pedit": return ["","Tablero",`${who} editó el tablero <b>${esc(e.pname||"")}</b>`];
     case "parch": return ["","Tablero",`${who} ${e.to?"archivó":"reactivó"} el tablero <b>${esc(e.pname||"")}</b>`];
@@ -1365,7 +1379,7 @@ ${!ro&&asg(t).length?(()=>{ const ms=asg(t).map(x=>D.members[x]); const wm=ms.fi
 ${!ro&&cl.length>1?`<span class="muted small" style="font-weight:400">Tocá un ítem para corregirlo. Arrastrá desde ${ic("grip")} para cambiar el orden.</span>`:""}
 ${ro?"":`<div class="row"><input class="inp" id="f-ci" placeholder="Agregar ítem (ej. Planta, Cortes, Fachadas)" style="flex:1"><button class="btn sm" data-act="ciAdd">Agregar</button></div>`}</div>
 ${acts.length?`<div class="fld"><span>Movimientos de esta tarea</span><div class="acts">${acts.map(e=>`<div><span class="tm">${fmtD(ymd(new Date(e.ts)))} ${hm(e.ts)}</span><span>${hSentence(e)[2]}</span></div>`).join("")}</div></div>`:""}
-<div class="row"><span class="muted small">Creada ${t.createdAt?fmtD(ymd(new Date(t.createdAt))):""}${t.createdBy&&D.members[t.createdBy]?` por ${esc(D.members[t.createdBy].name)}`:""}</span><span class="sp"></span>${ro?"":`<span id="delZone"><button class="btn ghost sm danger" data-act="delAsk">${ic("trash")}Eliminar</button></span>`}</div>
+<div class="row"><span class="muted small">Creada ${t.createdAt?fmtD(ymd(new Date(t.createdAt))):""}${t.createdBy&&D.members[t.createdBy]?` por ${esc(D.members[t.createdBy].name)}`:""}</span><span class="sp"></span>${!ro&&t.status==="done"?`<button class="btn ghost sm" data-act="archTask" data-id="${esc(id)}" title="${t.archived?"Volver a mostrarla en el tablero":"Ocultarla del tablero sin borrarla"}">${ic("archive")}${t.archived?"Desarchivar":"Archivar"}</button>`:""}${ro?"":`<span id="delZone"><button class="btn ghost sm danger" data-act="delAsk">${ic("trash")}Eliminar</button></span>`}</div>
 </div>`);
   const ta=$("#f-title"); const fit=()=>{ta.style.height="auto";ta.style.height=ta.scrollHeight+"px"}; fit(); ta.addEventListener("input",fit);
   ta.addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();ta.blur()}});
@@ -1448,7 +1462,7 @@ ${!id&&!projectsL().length?`<p class="muted small" style="margin:0">Un tablero p
 <div class="g2"><label class="fld"><span>Cliente</span><input class="inp" id="pj-client" value="${esc(p.client||"")}" placeholder="Opcional"></label>
 <label class="fld"><span>Ubicación</span><input class="inp" id="pj-place" value="${esc(p.place||"")}" placeholder="Opcional"></label></div>
 <div class="fld"><span>Color</span><div class="swatches">${Array.from({length:NC},(_,i)=>`<button type="button" data-pcol="${i}" style="--pc:var(--c${i})" aria-label="Color ${i+1}" aria-pressed="${st.color===i}"></button>`).join("")}</div></div>
-<div class="row">${id?`<button type="button" class="btn ghost sm" data-act="archProj" data-pid="${esc(id)}">${ic("archive")}${p.archived?"Reactivar":"Archivar"}</button>`:""}<span class="sp"></span><button type="button" class="btn ghost" data-act="close">Cancelar</button><button class="btn pri" type="submit">${id?"Guardar":"Crear tablero"}</button></div>
+<div class="row">${id?`<button type="button" class="btn ghost sm" data-act="archProj" data-pid="${esc(id)}">${ic("archive")}${p.archived?"Reactivar":"Archivar"}</button>`:""}${id&&S.isAdmin?`<span id="pdelZone"><button type="button" class="btn ghost sm danger" data-act="pdelAsk" data-pid="${esc(id)}">${ic("trash")}Eliminar</button></span>`:""}<span class="sp"></span><button type="button" class="btn ghost" data-act="close">Cancelar</button><button class="btn pri" type="submit">${id?"Guardar":"Crear tablero"}</button></div>
 </form>`,"narrow");
     $$("[data-pk]").forEach(b=>b.onclick=()=>{ st.kind=b.dataset.pk; if(!id){ const c=$("#pj-code"); if(/^[OP]-\d+$/.test(c.value)) c.value=nextCode(st.kind);} $$("[data-pk]").forEach(x=>x.setAttribute("aria-pressed",x===b)); });
     $$("[data-pcol]").forEach(b=>b.onclick=()=>{ st.color=+b.dataset.pcol; $$("[data-pcol]").forEach(x=>x.setAttribute("aria-pressed",x===b)); });
@@ -1605,6 +1619,12 @@ document.addEventListener("click",e=>{
     case "newTask": newTaskModal(ds.due?{due:ds.due}:{}); break;
     case "newProj": projModal(null,ds.kind||"obra"); break;
     case "editProj": projModal(ds.pid); break;
+    case "toggleArchT": S.showArchT=!S.showArchT; render(); break;
+    case "archTask": { const t=DATA().tasks[ds.id]; if(!t) break; const on=!t.archived; archiveTask(ds.id,on); if(on){ $("#layer").innerHTML=""; S.openTask=null; } render(); if(S.openTask) refreshTask(); break; }
+    case "pdelAsk": { const n=Object.values(DATA().tasks).filter(t=>t.projectId===ds.pid).length;
+      $("#pdelZone").innerHTML=`<span class="confirm" style="font-size:12.5px">¿Eliminar el tablero${n?` y sus ${n} ${n===1?"tarea":"tareas"}`:""}? No se puede deshacer. <button type="button" class="btn sm" data-act="pdelNo" data-pid="${esc(ds.pid)}">No</button><button type="button" class="btn sm danger" data-act="pdelYes" data-pid="${esc(ds.pid)}">Eliminar</button></span>`; break; }
+    case "pdelNo": $("#pdelZone").innerHTML=`<button type="button" class="btn ghost sm danger" data-act="pdelAsk" data-pid="${esc(ds.pid)}">${ic("trash")}Eliminar</button>`; break;
+    case "pdelYes": { $("#layer").innerHTML=""; deleteProject(ds.pid); if(S.pid===ds.pid) S.pid=null; go("boards"); break; }
     case "archProj": { const p=DATA().projects[ds.pid]; patch("projects",ds.pid,{archived:!p.archived}); log("parch",{projectId:ds.pid,pname:p.name,to:!p.archived}); $("#layer").innerHTML=""; go("boards"); toast(p.archived?"Tablero reactivado":"Tablero archivado"); break; }
     case "toggleArch": S.showArch=!S.showArch; render(); break;
     case "fm": S.fm=S.fm===ds.mid?null:ds.mid; render(); break;
