@@ -1,10 +1,10 @@
 // ---- Función "gcal" de Gabinete (Supabase Edge Function): sincronización con Google Calendar ----
 // Cada persona del equipo conecta su propia cuenta de Google desde Gabinete. Desde ahí:
-//  - Gabinete → Google: las tareas con fecha en las que es responsable (abiertas y NO privadas) se copian
+//  - Gabinete → Google: las tareas con fecha en las que es responsable (abiertas) se copian
 //    como eventos de día completo a un calendario "Gabinete" que se crea en su Google Calendar. Cuando
 //    alguien (cualquiera del equipo) cambia la fecha, el título, el tablero o los responsables, la base
 //    llama a esta función y se actualiza el calendario de cada responsable. Si la tarea se termina, se
-//    borra, se le quita la fecha o se marca privada, el evento se quita.
+//    borra o se le quita la fecha, el evento se quita. Las tareas privadas van solo al calendario de quien la creó.
 //  Solo va de Gabinete a Google: el calendario personal de cada uno no entra a Gabinete.
 //
 // Acciones (POST JSON):
@@ -100,16 +100,20 @@ async function ensureCalendar(acc) {
 // ---- tareas → eventos ----
 const addDay = (s) => { const d = new Date(s + "T12:00:00Z"); d.setUTCDate(d.getUTCDate() + 1); return d.toISOString().slice(0, 10); };
 const resp = (t) => [...new Set([t.assignee_id, ...(t.co_assignees || [])].filter(Boolean))];
-const wanted = (t) => t && t.due && t.status !== "done" && !t.private;
+const wanted = (t) => t && t.due && t.status !== "done";
+const owner = (t) => t.created_by || t.assignee_id;
+// Quiénes la tienen en su Google: los responsables. Una tarea privada, solo quien la creó.
+const audience = (t) => !wanted(t) ? [] : t.private ? [owner(t)].filter(Boolean) : resp(t);
 async function hash(s) { return b64u(await crypto.subtle.digest("SHA-256", te.encode(s))).slice(0, 22); }
 async function eventBody(t, projs, members) {
   const p = projs[t.project_id];
   const summary = (p ? (p.code || p.name) + " · " : "") + t.title;
   const who = resp(t).map(id => members[id]).filter(Boolean).join(", ");
-  const description = `Tarea de Gabinete\nTablero: ${p ? (p.code ? p.code + " · " : "") + p.name : "Sin tablero"}\nEstado: ${STATUS[t.status] || t.status}` +
+  const description = `Tarea de Gabinete\nTablero: ${p ? (p.code ? p.code + " · " : "") + p.name : "Sin tablero"}\nEstado: ${STATUS[t.status] || t.status}` + (t.private ? "\nTarea privada" : "") +
     (who ? `\nResponsables: ${who}` : "") + (t.notes ? `\nNotas: ${String(t.notes).slice(0, 500)}` : "") + `\n\nAbrir la tarea: ${APP}#tarea-${t.id}`;
   const body = { summary, description, start: { date: t.due }, end: { date: addDay(t.due) }, transparency: "transparent",
     source: { title: "Gabinete", url: APP + "#tarea-" + t.id }, extendedProperties: { private: { gabinete: t.id } } };
+  if (t.private) body.visibility = "private";
   return { body, huella: await hash(JSON.stringify(body)) };
 }
 async function lookups(tasks) {
@@ -137,7 +141,7 @@ async function dropEvent(acc, row) {
   }
   await rest(`gcal_eventos?task_id=eq.${row.task_id}&member_id=eq.${row.member_id}`, { method: "DELETE" });
 }
-const TASK_COLS = "id,title,notes,due,status,private,project_id,assignee_id,co_assignees";
+const TASK_COLS = "id,title,notes,due,status,private,project_id,assignee_id,co_assignees,created_by";
 
 /** Sincroniza todas las tareas de una persona conectada. */
 async function syncMember(acc) {
@@ -145,7 +149,8 @@ async function syncMember(acc) {
   try {
     await ensureCalendar(acc);
     const id = acc.member_id;
-    const tasks = (await rest(`tasks?due=not.is.null&status=neq.done&private=is.false&or=(assignee_id.eq.${id},co_assignees.cs.{${id}})&select=${TASK_COLS}`)).filter(wanted);
+    const tasks = (await rest(`tasks?due=not.is.null&status=neq.done&or=(assignee_id.eq.${id},co_assignees.cs.{${id}},created_by.eq.${id})&select=${TASK_COLS}`))
+      .filter(t => audience(t).includes(id));
     const rows = Object.fromEntries((await rest(`gcal_eventos?member_id=eq.${id}&select=*`)).map(r => [r.task_id, r]));
     const { projs, members } = await lookups(tasks);
     for (const t of tasks) {
@@ -177,11 +182,11 @@ async function syncMember(acc) {
   }
   return n;
 }
-/** Sincroniza una tarea en el calendario de cada responsable conectado (y la quita de quien ya no lo es). */
+/** Sincroniza una tarea en el calendario de cada persona que le corresponde (y la quita de quien ya no). */
 async function syncTask(id) {
   const t = (await rest(`tasks?id=eq.${id}&select=${TASK_COLS}`))[0] || null;
   const rows = await rest(`gcal_eventos?task_id=eq.${id}&select=*`);
-  const want = wanted(t) ? resp(t) : [];
+  const want = audience(t);
   const ids = [...new Set([...want, ...rows.map(r => r.member_id)])];
   if (!ids.length) return { cuentas: 0 };
   const accs = await rest(`gcal_cuentas?member_id=in.(${ids.join(",")})&select=*`);

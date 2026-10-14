@@ -14,9 +14,9 @@ Solo pueden entrar los mails que un administrador cargó en **Equipo → Gestion
 
 Cada persona conecta su propia cuenta de Google en **Mi cuenta** (o con el botón del **Calendario**):
 
-- Sus tareas abiertas con fecha (no privadas) se copian a un calendario **Gabinete** de su Google Calendar.
+- Sus tareas abiertas con fecha se copian a un calendario **Gabinete** de su Google Calendar. Las privadas van solo al calendario de quien la creó, como evento privado.
   Cuando cualquiera del equipo cambia la fecha, el título, el tablero o los responsables, se actualiza
-  el calendario de cada responsable. Al terminar, borrar, quitar la fecha o marcar privada, se quita.
+  el calendario de cada responsable. Al terminar, borrar o quitar la fecha, se quita.
 - Va solo de Gabinete a Google: los eventos del calendario personal no entran a Gabinete.
 
 Piezas: función `supabase/functions/gcal` (Verify JWT desactivado; secretos `GOOGLE_CLIENT_ID` y
