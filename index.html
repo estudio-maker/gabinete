@@ -550,9 +550,11 @@ const APP_URL=location.origin+location.pathname.replace(/index\.html$/,"");
 const taskLink=id=>APP_URL+"#tarea-"+id;
 const okMail=v=>/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(v||"").trim());
 const ICON="apple-touch-icon.png";
-const APP_VERSION="2026-10-16.1";
+const APP_VERSION="2026-10-16.2";
 /* Novedades: la más nueva primero. Se muestran solas al entrar a una versión nueva. */
 const CHANGELOG=[
+ {v:"2026-10-16.2",d:"2026-10-16",items:[
+  ["chat","<b>Recordar por WhatsApp</b> ahora también muestra a los proveedores, contratistas y clientes anotados en «Pedido a» que tengan celular."]]},
  {v:"2026-10-16.1",d:"2026-10-16",items:[
   ["chat","<b>Recordatorio por WhatsApp:</b> abrí una tarea y tocá el nombre del responsable en <b>Recordar por WhatsApp</b>. Se abre WhatsApp con el mensaje ya escrito (nombre de la tarea, obra y vencimiento), solo tenés que tocar <b>Enviar</b>. Para que aparezca, cada persona carga su celular en <b>Mi cuenta → Editar mis datos</b>. A los proveedores de la tarea también les llega el nombre de la tarea al tocar su botón de WhatsApp."]]},
  {v:"2026-10-14.5",d:"2026-10-14",items:[
@@ -683,6 +685,7 @@ const CT=()=>DATA().contacts||{};
 const provs=t=>(Array.isArray(t&&t.providers)?t.providers:[]).filter(x=>x&&CT()[x.c]);
 const contactsL=()=>Object.values(CT()).sort((a,b)=>String(a.name).localeCompare(String(b.name),"es"));
 const cLabel=c=>c.name+(c.rubro?" · "+c.rubro:"");
+const okTel=p=>String(p||"").replace(/\D/g,"").length>=6;
 const telHref=p=>"tel:"+String(p||"").replace(/[^\d+]/g,"");
 const waHref=(p,txt)=>{ let d=String(p||"").replace(/\D/g,""); if(d.startsWith("0")) d="595"+d.slice(1); return "https://wa.me/"+d+(txt?"?text="+encodeURIComponent(txt):""); };
 /* recordatorio por WhatsApp con el nombre de la tarea; a los del equipo les va también el enlace a la tarea */
@@ -1389,9 +1392,9 @@ ${t.private?`<p class="banner ro" style="margin:0;display:flex;gap:8px;align-ite
 </div>
 ${!ro&&asg(t).length?(()=>{ const ms=asg(t).map(x=>D.members[x]); const wm=ms.filter(m=>okMail(m.email)); const nm=ms.filter(m=>!okMail(m.email));
   return `<div class="mailrow">${ic("mail")}<span>${wm.length?`Avisar por mail a ${esc(wm.map(m=>first(m.name)).join(", "))}`:""}${nm.length?`${wm.length?" · ":""}${esc(nm.map(m=>first(m.name)).join(", "))} sin mail cargado`:""}</span><span class="sp"></span>${wm.length?`<button class="btn sm" data-act="notifySend" data-id="${esc(t.id)}" data-to="${esc(wm.map(m=>m.id).join(","))}">Enviar aviso por mail</button>`:""}${nm.length===1?`<button class="btn ghost sm" data-act="memEdit" data-mid="${esc(nm[0].id)}">Cargar mail</button>`:""}</div>`; })():""}
-${!ro&&asg(t).filter(x=>x!==S.meId).length?(()=>{ const ms=asg(t).filter(x=>x!==S.meId).map(x=>D.members[x]); const wp=ms.filter(m=>String(m.phone||"").replace(/\D/g,"").length>=6); const np=ms.filter(m=>!wp.includes(m));
+${!ro&&(asg(t).some(x=>x!==S.meId)||provs(t).some(x=>okTel(CT()[x.c].phone)))?(()=>{ const ms=asg(t).filter(x=>x!==S.meId).map(x=>D.members[x]); const wp=ms.filter(m=>okTel(m.phone)); const np=ms.filter(m=>!wp.includes(m)); const pc=provs(t).map(x=>CT()[x.c]).filter(c=>okTel(c.phone));
   const fix=np.length===1&&(S.isAdmin||np[0].id===S.meId);
-  return `<div class="mailrow">${ic("chat")}<span>${wp.length?"Recordar por WhatsApp a":""}${np.length?`${wp.length?" · ":""}${esc(np.map(m=>first(m.name)).join(", "))} sin celular cargado`:""}</span><span class="sp"></span>${wp.map(m=>`<a class="btn sm" href="${esc(waHref(m.phone,waText(t,m.name,true)))}" target="_blank" rel="noopener" data-wa="${esc(t.id)}" data-wan="${esc(m.name)}">${ic("chat")}${esc(first(m.name))}</a>`).join("")}${fix?`<button class="btn ghost sm" data-act="memEdit" data-mid="${esc(np[0].id)}">Cargar celular</button>`:""}</div>`; })():""}
+  return `<div class="mailrow">${ic("chat")}<span>${wp.length||pc.length?"Recordar por WhatsApp a":""}${np.length?`${wp.length||pc.length?" · ":""}${esc(np.map(m=>first(m.name)).join(", "))} sin celular cargado`:""}</span><span class="sp"></span>${wp.map(m=>`<a class="btn sm" href="${esc(waHref(m.phone,waText(t,m.name,true)))}" target="_blank" rel="noopener" data-wa="${esc(t.id)}" data-wan="${esc(m.name)}">${ic("chat")}${esc(first(m.name))}</a>`).join("")}${pc.map(c=>`<a class="btn sm" href="${esc(waHref(c.phone,waText(t,c.name)))}" target="_blank" rel="noopener" data-wa="${esc(t.id)}" data-wan="${esc(c.name)}">${ic("chat")}${esc(c.name.split(" ").slice(0,2).join(" "))}</a>`).join("")}${fix?`<button class="btn ghost sm" data-act="memEdit" data-mid="${esc(np[0].id)}">Cargar celular</button>`:""}</div>`; })():""}
 <div class="fld"><span>Pedido a (proveedores o contratistas)${provs(t).length?` <span class="mono muted">${provs(t).filter(x=>x.ok).length}/${provs(t).length} respondieron</span>`:""}</span>
 <div class="plist" id="tp-list">${provListHTML(t,{rm:true})}</div>${ro?"":`<div id="tp-pick"></div>`}</div>
 <label class="fld"><span>Etapa</span><select class="inp" id="f-etapa" data-f="etapa" ${dis}>${opt("","—",!t.etapa)}${ETAPAS.map(e=>opt(e,e,t.etapa===e)).join("")}</select></label>
