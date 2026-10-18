@@ -607,6 +607,18 @@ a.btn.pri,a.btn.wa-b{color:#fff}
 .help{background:var(--accentbg);border-radius:8px;padding:10px 12px;font-size:12.5px;line-height:1.5;color:var(--ink)}
 .cal .cc.rem{border-left-color:var(--tape)} .cal .cc.vis{border-left-color:var(--c4)}
 .ddots i.rem{background:var(--tape)} .ddots i.vis{background:var(--c4)}
+.cal .cc.aus{border-left-color:var(--bad)} .cal .cc.ped{border-left-color:var(--accent)}
+.ddots i.aus{background:var(--bad)} .ddots i.ped{background:var(--accent)}
+.pcard.pend{border-style:dashed;box-shadow:none;cursor:default}
+.av.wait{background:var(--tapebg);color:var(--warn)}
+.ausl{all:unset;cursor:pointer;font-size:12px;color:var(--ink2);text-decoration:underline;text-underline-offset:2px}
+.daylog{border:1px solid var(--line2);border-radius:8px;overflow:hidden}
+.daylog .hrow:last-child{border-bottom:0}
+.pedrow{display:flex;gap:10px;align-items:center;padding:9px 12px;border-bottom:1px solid var(--line2);cursor:pointer;font-size:13px}
+.pedrow:last-child{border-bottom:0}
+.pedrow:hover{background:var(--colbg)}
+.pedrow .tx{flex:1;min-width:0;display:grid;gap:1px}
+.pedrow .tx span{font-size:12px;color:var(--ink3)}
 @media (max-width:820px){
   .pgrid2{grid-template-columns:1fr}
   .shop .add{flex-wrap:wrap}
@@ -718,7 +730,7 @@ const S={mode:"boot",items:{},hogar:{id:"",nombre:"Mi casa",pais:"595"},uid:null
   view:"home",tv:"hoy",lista:null,cal:{y:now.getFullYear(),m:now.getMonth(),sel:TODAY()},session:null,staff:null};
 const live=()=>S.mode==="live";
 const all=tipo=>Object.values(S.items).filter(x=>x.tipo===tipo);
-const personal=(todos=false)=>all("personal").filter(p=>todos||p.activo!==false).sort((a,b)=>(a.orden||0)-(b.orden||0)||String(a.nombre).localeCompare(b.nombre,"es"));
+const personal=(todos=false)=>all("personal").filter(p=>todos||(p.activo!==false&&!p.pendiente)).sort((a,b)=>(a.orden||0)-(b.orden||0)||String(a.nombre).localeCompare(b.nombre,"es"));
 const P=id=>{const p=S.items[id];return p&&p.tipo==="personal"?p:null};
 const pcol=p=>`--ac:var(--c${((p&&p.color)||0)%NC})`;
 const avHTML=(p,cls="")=>p?`<span class="av ${cls}" style="${pcol(p)}" title="${esc(p.nombre)}">${esc(initials(p.nombre))}</span>`:`<span class="av none ${cls}" title="Sin asignar">${ic("user")}</span>`;
@@ -777,7 +789,17 @@ function svcMissed(k,days=14){ const c=svcCfg(k); if(!(c.dias||[]).length) retur
   for(let i=1;i<=days;i++){ const d=addD(TODAY(),-i); if(since&&d<since) break; if(svcOn(k,d)&&!vs.has(d)) out.push(d); } return out; }
 const comprasPend=lid=>all("compra").filter(c=>(!lid||c.lista===lid)&&!c.ok);
 const listas=()=>all("lista").sort((a,b)=>(a.orden||0)-(b.orden||0));
-const worksOn=(p,d)=>(p.dias||[]).includes(pYmd(d).getDay());
+const MOTIVOS=["Falta","Enfermedad","Permiso","Vacaciones","Feriado","Otro"];
+const ausencias=pid=>all("ausencia").filter(a=>!pid||a.persona===pid).sort((a,b)=>b.desde.localeCompare(a.desde));
+const ausenteOn=(pid,d)=>all("ausencia").find(a=>a.persona===pid&&a.desde<=d&&d<=(a.hasta||a.desde));
+const ausDias=a=>dayDiff(a.hasta||a.desde,a.desde)+1;
+const ausTxt=a=>(a.hasta&&a.hasta!==a.desde?`del ${fmtD(a.desde)} al ${fmtD(a.hasta)}`:longD(a.desde));
+const tocaVenir=(p,d)=>(p.dias||[]).includes(pYmd(d).getDay());
+const worksOn=(p,d)=>tocaVenir(p,d)&&!ausenteOn(p.id,d);
+const pedidos=lid=>all("pedido").filter(x=>!lid||x.lista===lid).sort((a,b)=>b.ts-a.ts);
+const pedCount=x=>{ const its=x.items||[]; return {n:its.length,ok:its.filter(i=>i.ok).length}; };
+const invLink=p=>APP_URL+"#p="+p.token;
+const invText=p=>`¡Hola! Te quiero sumar al personal de ${S.hogar.nombre} en Casa, donde vas a ver tus tareas y las compras. Tocá este enlace y completá tu nombre y tu número de WhatsApp: ${invLink(p)}`;
 
 /* ---------- guardar ---------- */
 let sb=null;
@@ -859,7 +881,7 @@ VIEWS.home=()=>{
   const d=TODAY(), inst=instDay(d), pend=inst.filter(x=>!isDone(x.t,x.d)), late=inst.filter(x=>x.late);
   const rems=[]; for(let i=0;i<8;i++){ const dd=addD(d,i); remindersOn(dd).forEach(r=>{ if(!isDone(r,dd)) rems.push({r,d:dd}); }); }
   const lateRems=all("recordatorio").filter(r=>!repeats(r)&&r.fecha<d&&!isDone(r,r.fecha));
-  const vienen=personal().filter(p=>worksOn(p,d));
+  const vienen=personal().filter(p=>worksOn(p,d)), faltan=personal().filter(p=>tocaVenir(p,d)&&ausenteOn(p.id,d));
   const svcHoy=Object.keys(SVC).filter(k=>svcOn(k,d));
   const missed=Object.keys(SVC).flatMap(k=>svcMissed(k,7).map(x=>({k,d:x})));
   const ps=personal();
@@ -875,6 +897,7 @@ VIEWS.home=()=>{
 <button class="stat ${lateRems.length?"bad":rems.some(x=>x.d===d)?"warn":""}" data-act="go" data-v="recordatorios"><span class="v">${rems.length+lateRems.length}</span><span class="l">Recordatorios (7 días)</span></button></div>
 ${missed.length?`<div class="hfsec">${missed.map(m=>`<div class="alert">${ic("warn")}<span><b>${SVC[m.k].n}:</b> no hay visita registrada el ${esc(longD(m.d))}.</span><span class="sp"></span><button class="btn sm" data-act="newVisita" data-k="${m.k}" data-d="${m.d}">Registrar</button></div>`).join("")}</div>`:""}
 <section class="hfsec"><div class="sec-h"><h2>Hoy en casa</h2></div>
+${faltan.map(p=>{ const a=ausenteOn(p.id,d); return `<div class="alert warn">${ic("user")}<span><b>${esc(p.nombre)}</b> no viene hoy: ${esc(a.motivo||"ausencia")}${a.hasta&&a.hasta!==a.desde?" (hasta el "+esc(fmtD(a.hasta))+")":""}.</span><span class="sp"></span><button class="btn sm" data-act="editAus" data-id="${a.id}">Ver</button></div>`; }).join("")}
 ${vienen.length||svcHoy.length?`<div class="hflist">${vienen.map(p=>{ const n=instDay(d,p.id).filter(x=>!isDone(x.t,x.d)).length;
   return `<div class="prow">${avHTML(p,"lg")}<div class="nm"><b>${esc(p.nombre)}</b><span>${esc(p.rol||"")}${p.entrada?" · "+esc(p.entrada)+(p.salida?"–"+esc(p.salida):""):""} · ${n} tarea${n===1?"":"s"}</span></div>${okTel(p.cel)?`<a class="icon-btn wa" href="${esc(waHref(p.cel,waTasksText(p)))}" target="_blank" rel="noopener" aria-label="Mandar tareas por WhatsApp" data-act="waLog" data-id="${p.id}">${ic("chat")}</a>`:""}</div>`; }).join("")}
 ${svcHoy.map(k=>{ const c=svcCfg(k), p=P(c.persona), v=visitas(k).find(x=>x.fecha===d);
@@ -908,14 +931,19 @@ ${p&&okTel(p.cel)?`<a class="icon-btn wa" href="${esc(waHref(p.cel,waTasksText(p
 <div class="quick"><button data-act="newTask" data-resp="${p?p.id:""}">${ic("plus")} Agregar tarea</button></div></section>`; }).join("")}</div>`;
 };
 
-VIEWS.personal=()=>{ const ps=personal(true), d=TODAY();
-  return `<div class="sec-h"><p class="muted" style="margin:0;max-width:60ch">Tu personal no necesita mail ni instalar nada: se agrega con su número de WhatsApp y le mandás sus tareas por ahí.${live()?" Cada persona tiene además un enlace propio para ver y marcar sus tareas.":""}</p></div>
-<div class="pgrid">${ps.map(p=>{ const n=instDay(d,p.id).filter(x=>!isDone(x.t,x.d)).length;
-  return `<div class="pcard ${p.activo===false?"arch":""}"><div class="hd">${avHTML(p,"lg")}<div class="nm"><h3>${esc(p.nombre)}</h3><span class="rol">${esc(p.rol||"")}${p.activo===false?" · ya no trabaja":""}</span></div><button class="icon-btn" data-act="editPersona" data-id="${p.id}" aria-label="Editar">${ic("edit")}</button></div>
+VIEWS.personal=()=>{ const ps=personal(true).filter(p=>!p.pendiente), inv=personal(true).filter(p=>p.pendiente&&p.activo!==false), d=TODAY(), mes=d.slice(0,7);
+  return `<div class="sec-h"><p class="muted" style="margin:0;max-width:60ch;flex:1">Tu personal no necesita mail ni instalar nada: se agrega con su número de WhatsApp y le mandás sus tareas por ahí.${live()?" Cada persona tiene además un enlace propio para ver y marcar sus tareas y las compras.":""}</p>
+${live()?`<button class="btn wa-b" data-act="invite">${ic("chat")} Invitar por WhatsApp</button>`:""}</div>
+<div class="pgrid">${inv.map(p=>`<div class="pcard pend"><div class="hd"><span class="av lg wait">${ic("clock")}</span><div class="nm"><h3>Invitación enviada</h3><span class="rol">${esc(p.rol||"")} · esperando que complete sus datos</span></div></div>
+<p class="small muted" style="margin:0">Cuando abra el enlace y cargue su nombre y su número, aparece acá sola.</p>
+<div class="ppl-acts"><a class="btn sm wa-b" href="${esc(waHref("",invText(p)))}" target="_blank" rel="noopener">${ic("chat")} Reenviar</a><button class="btn sm" data-act="copyInv" data-id="${p.id}">${ic("link")} Copiar enlace</button><button class="btn sm ghost danger" data-act="pendDel" data-id="${p.id}">${ic("trash")} Cancelar</button></div></div>`).join("")}
+${ps.map(p=>{ const n=instDay(d,p.id).filter(x=>!isDone(x.t,x.d)).length, au=ausenteOn(p.id,d), am=ausencias(p.id).filter(a=>a.desde.startsWith(mes)||(a.hasta||"").startsWith(mes));
+  return `<div class="pcard ${p.activo===false?"arch":""}"><div class="hd">${avHTML(p,"lg")}<div class="nm"><h3>${esc(p.nombre)}</h3><span class="rol">${esc(p.rol||"")}${p.activo===false?" · ya no trabaja":""}${au?` · <b style="color:var(--bad)">ausente hoy</b>`:""}</span></div><button class="icon-btn" data-act="editPersona" data-id="${p.id}" aria-label="Editar">${ic("edit")}</button></div>
 <div class="days sm">${WEEK.map(x=>`<i class="${(p.dias||[]).includes(x)?"on":""} ${x===pYmd(d).getDay()?"hoy":""}">${DL[x]}</i>`).join("")}</div>
 <div class="ft">${p.entrada?`${ic("clock")}<span class="mono">${esc(p.entrada)}${p.salida?"–"+esc(p.salida):""}</span>`:""}<span class="sp"></span><span class="tel">${esc(fmtTel(p.cel))}</span></div>
 <div class="ppl-acts">${okTel(p.cel)?`<a class="btn sm wa-b" href="${esc(waHref(p.cel,waTasksText(p)))}" target="_blank" rel="noopener" data-act="waLog" data-id="${p.id}">${ic("chat")} Tareas de hoy (${n})</a><a class="btn sm" href="${esc(telHref(p.cel))}">${ic("phone")} Llamar</a>`:""}
-${live()&&p.token?`<button class="btn sm" data-act="copyLink" data-id="${p.id}">${ic("link")} Su enlace</button>`:""}</div></div>`; }).join("")}
+${live()&&p.token?`<button class="btn sm" data-act="copyLink" data-id="${p.id}">${ic("link")} Su enlace</button>`:""}<button class="btn sm" data-act="newAus" data-id="${p.id}">${ic("cal")} Ausencia</button></div>
+${ausencias(p.id).length?`<button class="ausl" data-act="ausList" data-id="${p.id}">${am.reduce((t,a)=>t+ausDias(a),0)} día${am.reduce((t,a)=>t+ausDias(a),0)===1?"":"s"} de ausencia este mes · ver todas</button>`:""}</div>`; }).join("")}
 <button class="pnew" data-act="newPersona">${ic("plus")}<span>Agregar personal</span></button></div>`;
 };
 
@@ -923,16 +951,17 @@ VIEWS.compras=()=>{
   let ls_=listas(); if(!ls_.length) return `<div class="empty"><h2>Listas de compras</h2><p>Armá la lista del súper, la verdulería o la farmacia y mandala por WhatsApp a quien hace las compras.</p><button class="btn pri" data-act="initListas">Crear listas</button></div>`;
   if(!S.lista||!S.items[S.lista]) S.lista=ls_[0].id;
   const L=S.items[S.lista]; const its=all("compra").filter(c=>c.lista===L.id).sort((a,b)=>(a.orden||0)-(b.orden||0));
-  const pend=its.filter(c=>!c.ok), ok=its.filter(c=>c.ok);
+  const pend=its.filter(c=>!c.ok), ok=its.filter(c=>c.ok), peds=pedidos(L.id);
   const pendTx=new Set(pend.map(c=>c.txt.toLowerCase()));
   const frec=Object.entries(L.frec||{}).filter(([t])=>!pendTx.has(t.toLowerCase())).sort((a,b)=>b[1]-a[1]).slice(0,14);
   const row=c=>`<div class="it ${c.ok?"ok":""}"><button class="chk lg ${c.ok?"on":""}" data-act="itOk" data-id="${c.id}" aria-label="${c.ok?"Desmarcar":"Comprado"}">${ic("check")}</button><span class="t" data-act="editItem" data-id="${c.id}">${esc(c.txt)}</span>${c.cant?`<span class="q">${esc(c.cant)}</span>`:""}</div>`;
   return `<div class="lists">${ls_.map(l=>`<button data-act="lista" data-id="${l.id}" aria-pressed="${l.id===L.id}">${esc(l.nombre)}<span class="k">${comprasPend(l.id).length||""}</span></button>`).join("")}<button data-act="newLista" aria-label="Nueva lista">${ic("plus")}</button></div>
 <div class="sec-h"><h2>${esc(L.nombre)}</h2><span class="muted small">${pend.length} para comprar</span><span class="sp"></span>
-<button class="btn sm" data-act="shareLista">${ic("chat")} Enviar</button><button class="icon-btn" data-act="editLista" aria-label="Editar lista">${ic("edit")}</button></div>
+<button class="btn sm wa-b" data-act="shareLista">${ic("chat")} Pedir</button><button class="icon-btn" data-act="editLista" aria-label="Editar lista">${ic("edit")}</button></div>
 <div class="shop"><form class="add" id="addItem" autocomplete="off"><input class="inp" id="itTxt" placeholder="Agregar a ${esc(L.nombre)}… (ej. leche)" enterkeyhint="done"><input class="inp qty" id="itCant" placeholder="Cant."><button class="btn pri" type="submit">${ic("plus")}<span>Agregar</span></button></form>
-${pend.map(row).join("")}${!pend.length?`<div class="it"><span class="t muted">La lista está vacía.</span></div>`:""}
-${ok.length?`<div class="sub">Comprado <span class="sp"></span><button class="btn ghost sm" data-act="clearOk">Quitar comprados</button></div>${ok.map(row).join("")}`:""}</div>
+${pend.map(row).join("")}${!pend.length?`<div class="it"><span class="t muted">${ok.length?"Nada para comprar. Tocá «Pedir todo de nuevo» para volver a pedir lo de siempre.":"La lista está vacía."}</span></div>`:""}
+${ok.length?`<div class="sub">Ya en casa · ${ok.length} <span class="sp"></span><button class="btn ghost sm" data-act="reOk">${ic("rep")} Pedir todo de nuevo</button></div>${ok.map(row).join("")}`:""}</div>
+${peds.length?`<section class="hfsec"><div class="sec-h"><h2>Pedidos anteriores</h2><span class="muted small">${peds.length}</span></div><div class="shop">${peds.slice(0,15).map(x=>{ const c=pedCount(x), p=P(x.persona); return `<div class="pedrow" data-act="openPedido" data-id="${x.id}"><span class="dt mono small">${esc(fmtD(ymd(new Date(x.ts))))}</span><span class="tx"><b>${c.n} producto${c.n===1?"":"s"}${p?" · "+esc(first(p.nombre)):""}</b><span>${hm(x.ts)}${x.por?" · pidió "+esc(x.por):""}</span></span>${x.cerrado?`<span class="pill" style="background:var(--okbg);color:var(--ok)">Comprado</span>`:`<span class="pill">${c.ok}/${c.n}</span>`}</div>`; }).join("")}</div></section>`:""}
 ${frec.length?`<div class="hfsec"><div class="eyebrow">Lo que comprás seguido</div><div class="frec">${frec.map(([t])=>`<button data-act="frec" data-t="${esc(t)}">${ic("plus")}${esc(t)}</button>`).join("")}</div></div>`:""}`;
 };
 
@@ -964,26 +993,33 @@ ${Object.entries(gr).map(([k,xs])=>`<section class="hfsec"><div class="sec-h"><h
 
 VIEWS.cal=()=>{ const {y,m,sel}=S.cal; const f=new Date(y,m,1); const start=new Date(y,m,1-((f.getDay()+6)%7)); const today=TODAY();
   const cells=[]; for(let i=0;i<42;i++){ const d=new Date(start); d.setDate(start.getDate()+i); cells.push(ymd(d)); }
-  const dayData=d=>{ const ts=tareas().filter(t=>occurs(t,d)).map(t=>({t,d})); const rs=remindersOn(d); const vs=Object.keys(SVC).filter(k=>svcOn(k,d)||visitas(k).some(v=>v.fecha===d)); return {ts,rs,vs}; };
+  const AUS=all("ausencia"), PED=pedidos(), HI={}; all("hist").forEach(e=>{ const k=ymd(new Date(e.ts)); (HI[k]=HI[k]||[]).push(e); });
+  const dayData=d=>{ const ts=tareas().filter(t=>occurs(t,d)).map(t=>({t,d})); const rs=remindersOn(d); const vs=Object.keys(SVC).filter(k=>svcOn(k,d)||visitas(k).some(v=>v.fecha===d));
+    const au=AUS.filter(a=>a.desde<=d&&d<=(a.hasta||a.desde)&&P(a.persona)); const pe=PED.filter(x=>ymd(new Date(x.ts))===d); return {ts,rs,vs,au,pe,hi:(HI[d]||[]).sort((a,b)=>a.ts-b.ts)}; };
   const sd=dayData(sel);
   return `<div class="calbar"><button class="icon-btn" data-act="calM" data-n="-1" aria-label="Mes anterior">${ic("chevl")}</button><h2>${MES[m]} ${y}</h2><button class="icon-btn" data-act="calM" data-n="1" aria-label="Mes siguiente">${ic("chev")}</button><span class="sp"></span><button class="btn sm" data-act="calToday">Hoy</button></div>
 <div class="cal">${["Lun","Mar","Mié","Jue","Vie","Sáb","Dom"].map(x=>`<div class="dw">${x}</div>`).join("")}
-${cells.map(d=>{ const dd=pYmd(d), x=dayData(d); const chips=[...x.ts.map(o=>`<div class="cc ${isDone(o.t,d)?"done":""}" style="--pc:var(--c${((P(o.t.resp)||{}).color||7)%NC})"><span>${esc(o.t.titulo)}</span></div>`),...x.rs.map(r=>`<div class="cc rem"><span>${esc(r.titulo)}</span></div>`),...x.vs.map(k=>`<div class="cc vis"><span>${SVC[k].n}</span></div>`)];
-  const dots=[...x.ts.map(o=>`<i style="--pc:var(--c${((P(o.t.resp)||{}).color||7)%NC})"></i>`),...x.rs.map(()=>`<i class="rem"></i>`),...x.vs.map(()=>`<i class="vis"></i>`)].slice(0,6);
+${cells.map(d=>{ const dd=pYmd(d), x=dayData(d); const chips=[...x.ts.map(o=>`<div class="cc ${isDone(o.t,d)?"done":""}" style="--pc:var(--c${((P(o.t.resp)||{}).color||7)%NC})"><span>${esc(o.t.titulo)}</span></div>`),...x.rs.map(r=>`<div class="cc rem"><span>${esc(r.titulo)}</span></div>`),...x.vs.map(k=>`<div class="cc vis"><span>${SVC[k].n}</span></div>`),...x.pe.map(p=>`<div class="cc ped"><span>Pedido ${esc(p.nombre||"")}</span></div>`)];
+  chips.unshift(...x.au.map(a=>`<div class="cc aus"><span>${esc(first(P(a.persona).nombre))}: ${esc(a.motivo||"ausente")}</span></div>`));
+  const dots=[...x.ts.map(o=>`<i style="--pc:var(--c${((P(o.t.resp)||{}).color||7)%NC})"></i>`),...x.rs.map(()=>`<i class="rem"></i>`),...x.vs.map(()=>`<i class="vis"></i>`),...x.pe.map(()=>`<i class="ped"></i>`)]; dots.unshift(...x.au.map(()=>`<i class="aus"></i>`)); dots.splice(6);
   return `<div class="d ${dd.getMonth()!==m?"out":""} ${dd.getDay()%6===0?"we":""} ${d===today?"today":""} ${d===sel?"sel":""}" data-act="calSel" data-d="${d}"><span class="dn">${dd.getDate()}</span><div class="dchips">${chips.slice(0,3).join("")}${chips.length>3?`<span class="cmore">+${chips.length-3}</span>`:""}</div><div class="ddots">${dots.join("")}</div></div>`; }).join("")}</div>
-<div class="daypanel"><div class="sec-h"><h2 style="text-transform:capitalize">${esc(longD(sel))}</h2><span class="sp"></span><button class="btn sm" data-act="newTask" data-fecha="${sel}">${ic("plus")} Tarea</button></div>
+<div class="daypanel"><div class="sec-h"><h2 style="text-transform:capitalize">${esc(longD(sel))}</h2><span class="sp"></span><button class="btn sm" data-act="newAus" data-d="${sel}">${ic("plus")} Ausencia</button><button class="btn sm" data-act="newTask" data-fecha="${sel}">${ic("plus")} Tarea</button></div>
+${sd.au.length?`<div class="rlist">${sd.au.map(a=>{ const p=P(a.persona); return `<div class="alert warn" data-act="editAus" data-id="${a.id}" style="cursor:pointer">${avHTML(p)}<span><b>${esc(p.nombre)}</b> ausente: ${esc(a.motivo||"")}${a.hasta&&a.hasta!==a.desde?" · "+esc(ausTxt(a)):""}${a.nota?" · "+esc(a.nota):""}</span></div>`; }).join("")}</div>`:""}
 ${sd.ts.length?`<div class="daylist">${sd.ts.map(x=>card(x,{who:true})).join("")}</div>`:""}
 ${sd.rs.length?`<div class="rlist">${sd.rs.map(r=>remRow(r,sel)).join("")}</div>`:""}
 ${sd.vs.map(k=>{ const v=visitas(k).find(x=>x.fecha===sel); return `<div class="prow"><span class="pi">${ic(SVC[k].ic)}</span><div class="nm"><b>${SVC[k].n}</b><span>${v?"Visita registrada":"Día de visita"}</span></div>${v?`<button class="btn sm" data-act="openVisita" data-id="${v.id}">Ver</button>`:`<button class="btn sm" data-act="newVisita" data-k="${k}" data-d="${sel}">Registrar</button>`}</div>`; }).join("")}
-${!sd.ts.length&&!sd.rs.length&&!sd.vs.length?`<p class="muted small" style="margin:0">Nada para este día.</p>`:""}</div>`;
+${sd.pe.map(x=>{ const c=pedCount(x); return `<div class="prow" data-act="openPedido" data-id="${x.id}" style="cursor:pointer"><span class="pi">${ic("cart")}</span><div class="nm"><b>Pedido de ${esc(x.nombre||"compras")}</b><span>${hm(x.ts)} · ${c.ok} de ${c.n} comprados</span></div></div>`; }).join("")}
+${!sd.ts.length&&!sd.rs.length&&!sd.vs.length&&!sd.au.length&&!sd.pe.length&&!sd.hi.length?`<p class="muted small" style="margin:0">Nada para este día.</p>`:""}
+${sd.hi.length?`<div class="eyebrow" style="margin-top:6px">Lo que quedó registrado</div><div class="daylog">${sd.hi.map(histRow).join("")}</div>`:""}</div>`;
 };
 
 VIEWS.hist=()=>{ const h=all("hist").sort((a,b)=>b.ts-a.ts).slice(0,300);
   if(!h.length) return `<div class="empty"><h2>Historial</h2><p>Acá queda registrado lo que se hace en la casa: tareas hechas, visitas, compras y cambios.</p></div>`;
   const g={}; h.forEach(e=>{ const k=ymd(new Date(e.ts)); (g[k]=g[k]||[]).push(e); });
-  const K={done:"Hecho",reopen:"Reabierto",new:"Nuevo",del:"Borrado",move:"Cambio",vis:"Visita",wa:"WhatsApp",pay:"Pago"};
-  return Object.entries(g).map(([d,es])=>`<div class="hgroup"><h3>${esc(relD(d)==="Hoy"||relD(d)==="Ayer"?relD(d)+" · "+longD(d):longD(d))}</h3>${es.map(e=>`<div class="hrow"><span class="hk ${e.k==="done"?"done":e.k==="del"?"del":e.k==="new"?"new":"move"}">${K[e.k]||"Cambio"}</span><span class="tx"><b>${esc(e.quien||"")}</b> ${esc(e.txt)}</span><span class="tm">${hm(e.ts)}</span></div>`).join("")}</div>`).join("");
+  return Object.entries(g).map(([d,es])=>`<div class="hgroup"><h3>${esc(relD(d)==="Hoy"||relD(d)==="Ayer"?relD(d)+" · "+longD(d):longD(d))}</h3>${es.map(histRow).join("")}</div>`).join("");
 };
+const HK={done:"Hecho",reopen:"Reabierto",new:"Nuevo",del:"Borrado",move:"Cambio",vis:"Visita",wa:"WhatsApp",pay:"Pago"};
+const histRow=e=>`<div class="hrow"><span class="hk ${e.k==="done"?"done":e.k==="del"?"del":e.k==="new"?"new":"move"}">${HK[e.k]||"Cambio"}</span><span class="tx"><b>${esc(e.quien||"")}</b> ${esc(e.txt)}</span><span class="tm">${hm(e.ts)}</span></div>`;
 
 VIEWS.ajustes=()=>{ const th=ls.get("casa.theme")||"auto";
   return `<div class="pgrid2">
@@ -1053,6 +1089,7 @@ function personaModal(id){
   const CPICK="contacts" in navigator&&navigator.contacts&&typeof navigator.contacts.select==="function";
   modal(`${mHead(id?"Editar personal":"Agregar personal")}<form class="sheet-b" id="fPer">
 <div class="help">Solo hace falta el nombre y el número de WhatsApp. Tu personal no necesita mail ni instalar nada.</div>
+${!id&&live()?`<button type="button" class="btn wa-b" data-act="invite">${ic("chat")} Mejor invitarlo por WhatsApp: completa sus datos solo</button>`:""}
 <label class="fld"><span>Nombre</span><input class="inp" name="nombre" required maxlength="60" value="${esc(p.nombre)}" ${id?"":"autofocus"} autocomplete="off"></label>
 <label class="fld"><span>Número de WhatsApp</span><div class="row" style="flex-wrap:nowrap"><input class="inp" name="cel" type="tel" inputmode="tel" required value="${esc(p.cel||"")}" placeholder="0981 123 456" autocomplete="off">${CPICK?`<button class="btn" type="button" id="pickC">${ic("user")} Contactos</button>`:""}</div><small class="muted" id="celPrev">${p.cel?esc(fmtTel(p.cel)):""}</small></label>
 <label class="fld"><span>Qué hace</span><select class="inp" name="rol">${ROLES.map(r=>`<option ${r===p.rol?"selected":""}>${r}</option>`).join("")}</select></label>
@@ -1075,6 +1112,52 @@ ${id?`<button type="button" class="toggle" id="pAct" aria-pressed="${p.activo!==
     if(!o.token) o.token=tok(); put(o); closeModal(); };
   const db=$("#pDel"); if(db) db.onclick=()=>confirmDel(db,()=>{ del(id); log(`quitó a ${p.nombre}`,"del"); closeModal(); });
 }
+function inviteModal(){
+  modal(`${mHead("Invitar por WhatsApp")}<form class="sheet-b" id="fInv">
+<div class="help">Se abre tu WhatsApp, elegís a la persona y le llega un enlace. Ella completa su nombre y su número, y queda agregada a tu personal sola.</div>
+<label class="fld"><span>Qué hace</span><select class="inp" name="rol">${ROLES.map(r=>`<option>${r}</option>`).join("")}</select></label>
+<div class="fld"><span>Días que viene</span>${daysPick([1,2,3,4,5])}</div>
+<div class="g2"><label class="fld"><span>Entrada</span><input class="inp" type="time" name="entrada" value="07:00"></label><label class="fld"><span>Salida</span><input class="inp" type="time" name="salida" value="16:00"></label></div>
+<div class="row"><button class="btn wa-b" type="submit">${ic("chat")} Abrir WhatsApp</button>${navigator.share?`<button class="btn" type="button" id="invSh">${ic("link")} Otra app</button>`:""}</div></form>`,"narrow");
+  wireSheet(); const f=$("#fInv");
+  const crear=()=>{ const o={id:rid(),tipo:"personal",pendiente:true,nombre:"",cel:"",rol:f.rol.value,dias:readDays(f),entrada:f.entrada.value,salida:f.salida.value,notas:"",token:tok(),color:personal(true).length%NC,orden:Date.now(),activo:true,invitado:Date.now()};
+    put(o); log(`invitó por WhatsApp a una persona nueva (${o.rol})`,"wa",o.id); return o; };
+  f.onsubmit=e=>{ e.preventDefault(); const o=crear(); window.open(waHref("",invText(o)),"_blank","noopener"); closeModal(); go("personal"); toast("Cuando complete sus datos aparece en tu personal."); };
+  const sh=$("#invSh"); if(sh) sh.onclick=()=>{ const o=crear(); navigator.share({text:invText(o)}).catch(()=>{}); closeModal(); go("personal"); };
+}
+function ausModal(id,def={}){
+  const a=id?S.items[id]:{persona:def.persona||"",desde:def.desde||TODAY(),hasta:"",motivo:"Falta",nota:""};
+  modal(`${mHead(id?"Ausencia":"Registrar ausencia")}<form class="sheet-b" id="fAus">
+<label class="fld"><span>Quién</span><select class="inp" name="persona" required>${persOpts(a.persona,"Elegí a la persona")}</select></label>
+<div class="g2"><label class="fld"><span>Desde</span><input class="inp" type="date" name="desde" required value="${esc(a.desde)}"></label><label class="fld"><span>Hasta</span><input class="inp" type="date" name="hasta" value="${esc(a.hasta||"")}"><small class="muted">Vacío si es un solo día</small></label></div>
+<div class="fld"><span>Motivo</span><div class="chips" id="ausMot">${MOTIVOS.map(m=>`<button type="button" data-m="${m}" aria-pressed="${m===a.motivo}">${m}</button>`).join("")}</div></div>
+<label class="fld"><span>Nota</span><textarea class="inp" name="nota" rows="2" maxlength="300" placeholder="Ej. avisó por WhatsApp, trae certificado">${esc(a.nota||"")}</textarea></label>
+<div class="row"><button class="btn pri" type="submit">Guardar</button><span class="sp"></span>${id?`<button class="btn danger ghost" type="button" id="aDel">${ic("trash")} Eliminar</button>`:""}</div></form>`,"narrow");
+  const f=$("#fAus"); let mot=a.motivo;
+  $$("#ausMot button").forEach(b=>b.onclick=()=>{ mot=b.dataset.m; $$("#ausMot button").forEach(x=>x.setAttribute("aria-pressed",x===b)); });
+  f.onsubmit=e=>{ e.preventDefault(); const p=P(f.persona.value); if(!p) return toast("Elegí a la persona.");
+    let hasta=f.hasta.value; if(hasta&&hasta<f.desde.value) hasta=""; if(hasta===f.desde.value) hasta="";
+    const o={...a,persona:p.id,desde:f.desde.value,hasta,motivo:mot,nota:f.nota.value.trim()};
+    if(!id){ o.id=rid(); o.tipo="ausencia"; o.creada=Date.now(); }
+    put(o); log(`${id?"cambió":"registró"} la ausencia de ${first(p.nombre)} (${o.motivo}) ${ausTxt(o)}`,"move",o.id); closeModal(); };
+  const db=$("#aDel"); if(db) db.onclick=()=>confirmDel(db,()=>{ const p=P(a.persona); del(id); log(`borró la ausencia de ${p?first(p.nombre):"alguien"} ${ausTxt(a)}`,"del"); closeModal(); });
+}
+function ausListModal(pid){ const p=P(pid)||S.items[pid]; const xs=ausencias(pid);
+  modal(`${mHead("Ausencias de "+esc(first(p&&p.nombre)))}<div class="sheet-b"><div class="kv"><div><b>${xs.length}</b><span>Registros</span></div><div><b>${xs.reduce((t,a)=>t+ausDias(a),0)}</b><span>Días en total</span></div><div><b>${xs.filter(a=>a.desde.startsWith(TODAY().slice(0,4))).reduce((t,a)=>t+ausDias(a),0)}</b><span>Días este año</span></div></div>
+<div class="daylog">${xs.map(a=>`<div class="vrow" data-act="editAus" data-id="${a.id}"><span class="dt"><b>${pYmd(a.desde).getDate()}</b>${MES3[pYmd(a.desde).getMonth()]}</span><span class="tx"><b>${esc(a.motivo||"Ausencia")}</b><span>${esc(ausTxt(a))}${a.nota?" · "+esc(a.nota):""}</span></span><span class="pill">${ausDias(a)} d</span></div>`).join("")}</div>
+<button class="btn" data-act="newAus" data-id="${pid}">${ic("plus")} Registrar ausencia</button></div>`,"narrow");
+}
+function pedidoModal(id){ const x=S.items[id]; if(!x) return; const p=P(x.persona); const c=pedCount(x);
+  modal(`${mHead("Pedido de "+esc(x.nombre||"compras"))}<div class="sheet-b">
+<p class="muted small" style="margin:0">Pedido el ${esc(longD(ymd(new Date(x.ts))))} a las ${hm(x.ts)}${x.por?" por "+esc(x.por):""}${p?" · lo hace "+esc(p.nombre):""}. ${c.ok} de ${c.n} comprados${x.cerrado&&x.cerradoTs?" · terminado el "+esc(fmtD(ymd(new Date(x.cerradoTs))))+" a las "+hm(x.cerradoTs):""}.</p>
+<div class="shop">${(x.items||[]).map((it,i)=>`<div class="it ${it.ok?"ok":""}"><button class="chk lg ${it.ok?"on":""}" data-act="pedIt" data-id="${x.id}" data-i="${i}" aria-label="Comprado">${ic("check")}</button><span class="t">${esc(it.txt)}</span>${it.cant?`<span class="q">${esc(it.cant)}</span>`:""}</div>`).join("")||`<div class="it"><span class="t muted">Sin productos.</span></div>`}</div>
+<div class="row">${p&&okTel(p.cel)?`<a class="btn sm wa-b" href="${esc(waHref(p.cel,pedText(x,p)))}" target="_blank" rel="noopener">${ic("chat")} Reenviar</a>`:""}<span class="sp"></span><button class="btn danger ghost sm" id="pdDel">${ic("trash")} Eliminar pedido</button></div></div>`,"narrow");
+  const db=$("#pdDel"); db.onclick=()=>confirmDel(db,()=>{ del(id); closeModal(); });
+}
+const pedText=(x,p)=>`Lista de ${x.nombre}:\n`+((x.items||[]).filter(i=>!i.ok).map(i=>`• ${i.txt}${i.cant?" ("+i.cant+")":""}`).join("\n")||"(vacía)")+(live()&&p&&p.token?`\n\nCuando compres, marcá acá lo que ya compraste: ${staffLink(p)}`:"");
+function nuevoPedido(L,p){ const pend=comprasPend(L.id).sort((a,b)=>(a.orden||0)-(b.orden||0));
+  const x=put({id:rid(),tipo:"pedido",lista:L.id,nombre:L.nombre,ts:Date.now(),por:S.myName||"",persona:p?p.id:"",items:pend.map(c=>({id:c.id,txt:c.txt,cant:c.cant||"",ok:false})),cerrado:false});
+  log(`pidió la lista de ${L.nombre} (${pend.length} producto${pend.length===1?"":"s"})${p?" a "+first(p.nombre):""}`,"wa",x.id); return x; }
 function saveSvc(k,o){ const c=all("servicio").find(s=>s.clave===k); put({...(c||{id:rid(),tipo:"servicio",clave:k,desde:TODAY()}),...o}); }
 
 function svcModal(k){ const s=SVC[k], c=svcCfg(k);
@@ -1157,10 +1240,11 @@ function shareListaModal(){ const L=S.items[S.lista]; const pend=comprasPend(L.i
   const txt=`Lista de ${L.nombre}:\n`+(pend.map(c=>`• ${c.txt}${c.cant?" ("+c.cant+")":""}`).join("\n")||"(vacía)");
   const ps=personal().filter(p=>okTel(p.cel));
   modal(`${mHead("Enviar lista de "+esc(L.nombre))}<div class="sheet-b"><div class="mailprev">${esc(txt)}</div>
-<div class="plist">${ps.map(p=>`<a class="pick" href="${esc(waHref(p.cel,txt))}" target="_blank" rel="noopener">${avHTML(p)}<span style="flex:1">${esc(p.nombre)}</span><span class="wa">${ic("chat")}</span></a>`).join("")}
-<a class="pick" href="${esc(waHref("",txt))}" target="_blank" rel="noopener"><span class="av none">${ic("chat")}</span><span style="flex:1">Elegir otro contacto en WhatsApp</span></a>
+<p class="muted small" style="margin:0">Queda guardado como pedido.${live()?" Si se lo mandás a alguien de tu personal, marca desde su enlace lo que va comprando.":""}</p>
+<div class="plist">${ps.map(p=>`<a class="pick" href="${esc(waHref(p.cel,txt+(live()&&p.token?`\n\nCuando compres, marcá acá lo que ya compraste: ${staffLink(p)}`:"")))}" target="_blank" rel="noopener" data-act="pedido" data-pid="${p.id}">${avHTML(p)}<span style="flex:1">${esc(p.nombre)}</span><span class="wa">${ic("chat")}</span></a>`).join("")}
+<a class="pick" href="${esc(waHref("",txt))}" target="_blank" rel="noopener" data-act="pedido" data-pid=""><span class="av none">${ic("chat")}</span><span style="flex:1">Elegir otro contacto en WhatsApp</span></a>
 ${navigator.share?`<button class="pick" id="shNat"><span class="av none">${ic("link")}</span><span style="flex:1">Compartir por otra app</span></button>`:""}</div></div>`,"narrow");
-  const sn=$("#shNat"); if(sn) sn.onclick=()=>navigator.share({text:txt}).catch(()=>{});
+  const sn=$("#shNat"); if(sn) sn.onclick=()=>{ nuevoPedido(L,null); closeModal(); navigator.share({text:txt}).catch(()=>{}); };
 }
 
 /* ---------- eventos ---------- */
@@ -1188,9 +1272,20 @@ const ACT={
   initListas:()=>{ LISTAS0.forEach((n,i)=>put({id:rid(),tipo:"lista",nombre:n,orden:i,frec:{}})); },
   lista:el=>{ S.lista=el.dataset.id; render(); },
   newLista:()=>listaModal(null), editLista:()=>listaModal(S.lista),
-  itOk:el=>{ const c=S.items[el.dataset.id]; if(c){ put({...c,ok:!c.ok}); S.keepScroll=true; } },
+  itOk:el=>{ const c=S.items[el.dataset.id]; if(c){ put({...c,ok:!c.ok}); syncPedidos(c.id,!c.ok); S.keepScroll=true; } },
   editItem:el=>itemModal(el.dataset.id),
-  clearOk:()=>{ const its=all("compra").filter(c=>c.lista===S.lista&&c.ok); its.forEach(c=>del(c.id)); const L=S.items[S.lista]; log(`completó ${its.length} producto${its.length===1?"":"s"} de ${L?L.nombre:"la lista"}`,"done"); },
+  reOk:()=>{ const its=all("compra").filter(c=>c.lista===S.lista&&c.ok); its.forEach(c=>put({...c,ok:false})); toast(`Volvieron a la lista ${its.length} producto${its.length===1?"":"s"}.`); },
+  pedido:el=>{ const L=S.items[S.lista]; if(!L) return; nuevoPedido(L,P(el.dataset.pid)); setTimeout(closeModal,300); toast("Pedido guardado."); },
+  openPedido:el=>pedidoModal(el.dataset.id),
+  pedIt:el=>{ const x=S.items[el.dataset.id]; if(!x) return; const its=(x.items||[]).map((it,i)=>i===+el.dataset.i?{...it,ok:!it.ok}:it); const it=its[+el.dataset.i];
+    const cerrado=its.every(i=>i.ok); put({...x,items:its,cerrado,cerradoTs:cerrado?(x.cerradoTs||Date.now()):null});
+    const c=S.items[it.id]; if(c&&c.tipo==="compra") put({...c,ok:it.ok}); pedidoModal(x.id); },
+  invite:()=>inviteModal(),
+  copyInv:async el=>{ const p=S.items[el.dataset.id]; if(!p) return; try{ await navigator.clipboard.writeText(invLink(p)); toast("Enlace copiado."); }catch(e){ prompt("Enlace:",invLink(p)); } },
+  pendDel:el=>{ const p=S.items[el.dataset.id]; if(p) del(p.id); },
+  newAus:el=>ausModal(null,{persona:el.dataset.id||"",desde:el.dataset.d||(S.view==="cal"?S.cal.sel:TODAY())}),
+  editAus:el=>ausModal(el.dataset.id),
+  ausList:el=>ausListModal(el.dataset.id),
   frec:el=>addItem(el.dataset.t,""),
   newItemFocus:()=>{ if(S.view!=="compras") go("compras"); setTimeout(()=>{ const i=$("#itTxt"); i&&i.focus(); },50); },
   shareLista:()=>shareListaModal(),
@@ -1209,6 +1304,7 @@ const ACT={
     xs.forEach(x=>{ if(x.tipo==="personal"&&!x.token) x.token=tok(); S.items[x.id]=x; });
     const {error}=await sb.from("casa_items").upsert(xs.map(toRow)); if(error) throw error; ls.set(LOCAL_KEY+".subido",ls.get(LOCAL_KEY)); ls.del(LOCAL_KEY); toast(`Se subieron ${xs.length} datos.`); render(); }catch(e){ el.disabled=false; onErr(e); } }
 };
+function syncPedidos(cid,ok){ pedidos().filter(x=>!x.cerrado&&(x.items||[]).some(i=>i.id===cid)).forEach(x=>{ const its=x.items.map(i=>i.id===cid?{...i,ok}:i); const cerrado=its.every(i=>i.ok); put({...x,items:its,cerrado,cerradoTs:cerrado?Date.now():null}); }); }
 function addItem(txt,cant){ txt=String(txt||"").trim(); if(!txt||!S.lista) return; const L=S.items[S.lista];
   const dup=all("compra").find(c=>c.lista===L.id&&!c.ok&&c.txt.toLowerCase()===txt.toLowerCase());
   if(dup){ if(cant) put({...dup,cant}); toast(`«${txt}» ya está en la lista.`); return; }
@@ -1285,6 +1381,7 @@ function seed(){ const d=TODAY(); const wd=pYmd(d).getDay();
     if([2,5].includes(w)&&i!==3&&i!==4) mk({tipo:"visita",servicio:"jardin",persona:juan.id,fecha:dd,llegada:"07:40",salida:"11:50",trabajos:["Cortar césped","Bordes","Regar"],monto:"150000",pagado:i>7,nota:""});
     if([1,4].includes(w)) mk({tipo:"visita",servicio:"piscina",persona:car.id,fecha:dd,llegada:"08:10",salida:"09:30",trabajos:["Aspirar fondo","Limpiar skimmer","Agregar cloro"],ph:i<4?"7.9":"7.4",cloro:i<4?"0.8":"1.5",productos:"1 kg cloro granulado",monto:"100000",pagado:i>7,nota:""}); }
   mk({tipo:"hist",ts:Date.now()-3600e3,txt:"agregó a Rosa Benítez (Empleada doméstica)",k:"new",quien:S.myName||"Yo"});
+  mk({tipo:"ausencia",persona:mirta.id,desde:addD(TODAY(),2),hasta:addD(TODAY(),3),motivo:"Permiso",nota:"Trámite familiar",creada:Date.now()});
   if(live()){ const xs=Object.values(S.items); sb.from("casa_items").upsert(xs.map(toRow)).then(({error})=>error&&onErr(error)); }
   saveLocal();
 }
@@ -1297,14 +1394,34 @@ async function staffView(token){
     const {data,error}=sb?await sb.rpc("casa_personal_ver",{p_token:token}):{data:null,error:{message:"sin conexión"}};
     $("#top").innerHTML=`<img class="mk" src="icon-192.png" alt="" style="display:block"><h1>${esc(data?data.casa:"Casa")}</h1>`;
     if(error||!data){ $("#view").innerHTML=`<div class="staff"><div class="empty"><h2>Este enlace no funciona</h2><p>${error?"No se pudo conectar. Revisá internet y volvé a abrirlo.":"Puede que el enlace esté incompleto o que lo hayan cambiado. Pedile el enlace nuevo a la dueña o el dueño de casa."}</p></div></div>`; return; }
+    if(data.pendiente){
+      $("#view").innerHTML=`<div class="staff"><div class="hello"><div><div class="eyebrow">${esc(data.persona.rol||"")}</div><h1>¡Hola!</h1></div></div>
+<p class="muted" style="margin:0">Te invitaron a sumarte al personal de <b>${esc(data.casa)}</b>. Completá tus datos y listo: desde este mismo enlace vas a ver tus tareas y las compras.</p>
+<form class="panel" id="fAlta" autocomplete="on"><label class="fld"><span>Tu nombre y apellido</span><input class="inp" name="nombre" required maxlength="60" autocomplete="name"></label>
+<label class="fld"><span>Tu número de WhatsApp</span><input class="inp" name="cel" type="tel" inputmode="tel" required maxlength="30" autocomplete="tel" placeholder="0981 123 456"></label>
+<button class="btn pri" type="submit">Sumarme</button><p class="small muted" style="margin:0">Guardá este enlace: es tu acceso. No hace falta mail ni contraseña.</p></form></div>`;
+      $("#fAlta").onsubmit=async e=>{ e.preventDefault(); const f=e.target; if(!okTel(f.cel.value)){ f.cel.focus(); return toast("Escribí tu número de WhatsApp."); }
+        const b=f.querySelector("button"); b.disabled=true; b.textContent="Guardando…";
+        const {data:ok,error:er}=await sb.rpc("casa_personal_alta",{p_token:token,p_nombre:f.nombre.value.trim(),p_cel:f.cel.value.trim()});
+        if(er||!ok){ b.disabled=false; b.textContent="Sumarme"; return toast("No se pudo guardar. Revisá internet y volvé a intentar."); }
+        toast("¡Listo, ya estás en el personal de la casa!"); draw(); };
+      return; }
     const ts=data.tareas||[]; const d=TODAY(); S.items={}; ts.forEach(t=>S.items[t.id]={...t,tipo:"tarea"});
+    const peds=data.pedidos||[];
     const hoy=instDay(d,data.persona.id); const prox=[]; for(let i=1;i<7;i++){ const dd=addD(d,i); tareas().filter(t=>occurs(t,dd)).forEach(t=>prox.push({t,d:dd})); }
     const sc=x=>{ const done=isDone(x.t,x.d); return `<div class="card ${done?"done":""}"><div class="ttl">${x.d==="x"||x.d<=d?`<button class="chk lg ${done?"on":""}" data-sid="${x.t.id}" data-sd="${x.d}" aria-label="Marcar">${ic("check")}</button>`:""}<span class="t" style="font-size:15px">${esc(x.t.titulo)}</span></div>
 <div class="meta">${x.late?`<span class="late-b">Pendiente del ${fmtD(x.d)}</span>`:""}${x.d!=="x"&&x.d!==d?`<span class="due">${ic("cal")}${esc(relD(x.d))}</span>`:""}${x.t.hora?`<span class="due">${ic("clock")}${esc(x.t.hora)}</span>`:""}</div>${x.t.nota?`<div class="small muted">${esc(x.t.nota)}</div>`:""}</div>`; };
     $("#view").innerHTML=`<div class="staff"><div class="hello"><div><div class="eyebrow">${esc(longD(d))}</div><h1>¡Hola, ${esc(first(data.persona.nombre))}!</h1></div></div>
-<p class="muted" style="margin:0">Tocá el círculo cuando termines cada tarea. Le avisa a la casa al instante.</p>
+<p class="muted" style="margin:0">Tocá el círculo cuando termines cada tarea${peds.length?" y «Comprado» en cada cosa de las compras":""}. Le avisa a la casa al instante.</p>
 <section class="hfsec"><h2>Hoy</h2>${hoy.length?hoy.map(sc).join(""):`<div class="col-empty">No tenés tareas para hoy.</div>`}</section>
+${peds.map(x=>{ const its=x.items||[], n=its.filter(i=>i.ok).length; return `<section class="hfsec"><h2>${ic("cart")} Compras: ${esc(x.nombre||"")} <span class="muted small">${n} de ${its.length}</span></h2>
+<div class="shop">${its.map(i=>`<div class="it ${i.ok?"ok":""}"><span class="t">${esc(i.txt)}</span>${i.cant?`<span class="q">${esc(i.cant)}</span>`:""}<button class="btn sm ${i.ok?"":"pri"}" data-pid="${x.id}" data-iid="${esc(i.id)}" data-on="${i.ok?0:1}">${i.ok?"Desmarcar":ic("check")+" Comprado"}</button></div>`).join("")}</div>
+${x.cerrado?`<p class="small" style="margin:0;color:var(--ok)">¡Compraste todo! Ya le avisó a la casa.</p>`:""}</section>`; }).join("")}
 ${prox.length?`<section class="hfsec"><h2>Próximos días</h2>${prox.map(x=>sc(x)).join("")}</section>`:""}</div>`;
+    $$("[data-pid]").forEach(b=>b.onclick=async()=>{ b.disabled=true; const on=b.dataset.on==="1";
+      const {data:ok,error:er}=await sb.rpc("casa_personal_comprar",{p_token:token,p_pedido:b.dataset.pid,p_item:b.dataset.iid,p_hecho:on});
+      if(er||!ok){ b.disabled=false; toast("No se pudo guardar. Revisá internet y volvé a tocar."); return; }
+      draw(); });
     $$("[data-sid]").forEach(b=>b.onclick=async()=>{ b.disabled=true; const t=S.items[b.dataset.sid]; const on=!isDone(t,b.dataset.sd);
       const {data:ok,error:er}=await sb.rpc("casa_personal_marcar",{p_token:token,p_tarea:t.id,p_fecha:b.dataset.sd,p_hecho:on});
       if(er||!ok){ b.disabled=false; toast("No se pudo guardar. Revisá internet y volvé a tocar."); return; }
