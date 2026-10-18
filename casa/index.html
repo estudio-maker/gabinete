@@ -572,6 +572,7 @@ a.btn.pri,a.btn.wa-b{color:#fff}
 .it{display:flex;gap:10px;align-items:center;padding:9px 12px;border-bottom:1px solid var(--line2);min-height:46px}
 .it:last-child{border-bottom:0}
 .it .t{flex:1;min-width:0;overflow-wrap:anywhere;cursor:pointer;font-size:14px}
+.it .by{display:block;font-size:11.5px;color:var(--ink3)}
 .it .q{font-family:var(--f-mono);font-size:12px;color:var(--ink2);background:var(--line2);padding:1px 7px;border-radius:99px;white-space:nowrap}
 .it.ok .t{color:var(--ink3);text-decoration:line-through}
 .it.ok{background:var(--colbg)}
@@ -985,7 +986,7 @@ VIEWS.compras=()=>{
   const pend=its.filter(c=>!c.ok), ok=its.filter(c=>c.ok), peds=pedidos(L.id);
   const pendTx=new Set(pend.map(c=>c.txt.toLowerCase()));
   const frec=Object.entries(L.frec||{}).filter(([t])=>!pendTx.has(t.toLowerCase())).sort((a,b)=>b[1]-a[1]).slice(0,14);
-  const row=c=>`<div class="it ${c.ok?"ok":""}"><button class="chk lg ${c.ok?"on":""}" data-act="itOk" data-id="${c.id}" aria-label="${c.ok?"Desmarcar":"Comprado"}">${ic("check")}</button><span class="t" data-act="editItem" data-id="${c.id}">${esc(c.txt)}</span>${c.cant?`<span class="q">${esc(c.cant)}</span>`:""}</div>`;
+  const row=c=>`<div class="it ${c.ok?"ok":""}"><button class="chk lg ${c.ok?"on":""}" data-act="itOk" data-id="${c.id}" aria-label="${c.ok?"Desmarcar":"Comprado"}">${ic("check")}</button><span class="t" data-act="editItem" data-id="${c.id}">${esc(c.txt)}${c.por?`<small class="by">lo anotó ${esc(first(c.por))}</small>`:""}</span>${c.cant?`<span class="q">${esc(c.cant)}</span>`:""}</div>`;
   return `<div class="lists">${ls_.map(l=>`<button data-act="lista" data-id="${l.id}" aria-pressed="${l.id===L.id}">${esc(l.nombre)}<span class="k">${comprasPend(l.id).length||""}</span></button>`).join("")}<button data-act="newLista" aria-label="Nueva lista">${ic("plus")}</button></div>
 <div class="sec-h"><h2>${esc(L.nombre)}</h2><span class="muted small">${pend.length} para comprar</span><span class="sp"></span>
 <button class="btn sm wa-b" data-act="shareLista">${ic("chat")} Pedir</button><button class="icon-btn" data-act="editLista" aria-label="Editar lista">${ic("edit")}</button></div>
@@ -1008,7 +1009,7 @@ ${(c.dias||[]).length?`<div class="days sm">${WEEK.map(x=>`<i class="${c.dias.in
 ${k==="piscina"?`<div class="${lvl(lastPool&&lastPool.ph,PH)}"><b>${lastPool&&lastPool.ph?esc(lastPool.ph):"—"}</b><span>pH (ideal 7,2–7,6)</span></div><div class="${lvl(lastPool&&lastPool.cloro,CL)}"><b>${lastPool&&lastPool.cloro?esc(lastPool.cloro):"—"}</b><span>Cloro ppm (ideal 1–3)</span></div>`:""}</div>
 ${missed.length?`<div class="alert warn">${ic("warn")}<span>Sin visita registrada: ${missed.slice(0,4).map(d=>esc(DIA[pYmd(d).getDay()]+" "+fmtD(d))).join(", ")}${missed.length>4?"…":""}</span></div>`:""}
 <div>${vs.slice(0,12).map(v=>{ const vp=P(v.persona); const d=pYmd(v.fecha);
-  return `<div class="vrow" data-act="openVisita" data-id="${v.id}"><span class="dt"><b>${d.getDate()}</b>${MES3[d.getMonth()]}</span><span class="tx"><b>${esc((v.trabajos||[]).join(", ")||"Visita")}</b><span>${vp?esc(first(vp.nombre))+" · ":""}${v.llegada?esc(v.llegada)+(v.salida?"–"+esc(v.salida):""):""}${v.ph?" · pH "+esc(v.ph):""}${v.cloro?" · cloro "+esc(v.cloro):""}${v.nota?" · "+esc(v.nota):""}</span></span>
+  return `<div class="vrow" data-act="openVisita" data-id="${v.id}"><span class="dt"><b>${d.getDate()}</b>${MES3[d.getMonth()]}</span><span class="tx"><b>${esc((v.trabajos||[]).join(", ")||"Visita")}</b><span>${vp?esc(first(vp.nombre))+" · ":""}${v.llegada?esc(v.llegada)+(v.salida?"–"+esc(v.salida):""):""}${v.ph?" · pH "+esc(v.ph):""}${v.cloro?" · cloro "+esc(v.cloro):""}${v.nota?" · "+esc(v.nota):""}${v.por?" · marcó "+esc(first(v.por)):""}</span></span>
 ${+v.monto>0?`<button class="paybtn" data-act="pay" data-id="${v.id}" aria-pressed="${!!v.pagado}">${v.pagado?"Pagado":"Debe"} ${gs(v.monto)}</button>`:""}</div>`; }).join("")||`<div class="col-empty">Todavía no hay visitas registradas.</div>`}</div></section>`; }).join("")}</div>`;
 
 VIEWS.recordatorios=()=>{ const d=TODAY(); const rs=all("recordatorio");
@@ -1525,11 +1526,14 @@ async function staffView(token){
     const peds=data.pedidos||[]; const rems=(data.recordatorios||[]).map(r=>({...r,tipo:"recordatorio"}));
     const proxR=[]; for(let i=0;i<14;i++){ const dd=addD(d,i); rems.forEach(r=>{ if(occurs(r,dd)&&!isDone(r,dd)) proxR.push({r,d:dd}); }); }
     S.staffRems=rems;
+    const lis=data.listas||[], comp=data.compras||[], vis=data.visitas||[], svs=data.servicios||[];
+    const svName=k=>{ const c=svs.find(x=>x.clave===k); return SVC[k].rol+(c&&c.persona?" ("+first(c.persona)+")":""); };
+    const dOpts=[0,1,2,3].map(i=>{ const dd=addD(d,-i); return `<option value="${dd}">${i===0?"Hoy":i===1?"Ayer":esc(relD(dd))}</option>`; }).join("");
     const hoy=instDay(d,data.persona.id); const prox=[]; for(let i=1;i<7;i++){ const dd=addD(d,i); tareas().filter(t=>occurs(t,dd)).forEach(t=>prox.push({t,d:dd})); }
     const sc=x=>{ const done=isDone(x.t,x.d); return `<div class="card ${done?"done":""}"><div class="ttl">${x.d==="x"||x.d<=d?`<button class="chk lg ${done?"on":""}" data-sid="${x.t.id}" data-sd="${x.d}" aria-label="Marcar">${ic("check")}</button>`:""}<span class="t" style="font-size:15px">${esc(x.t.titulo)}</span></div>
 <div class="meta">${x.late?`<span class="late-b">Pendiente del ${fmtD(x.d)}</span>`:""}${x.d!=="x"&&x.d!==d?`<span class="due">${ic("cal")}${esc(relD(x.d))}</span>`:""}${x.t.hora?`<span class="due">${ic("clock")}${esc(x.t.hora)}</span>`:""}</div>${x.t.nota?`<div class="small muted">${esc(x.t.nota)}</div>`:""}</div>`; };
     $("#view").innerHTML=`<div class="staff"><div class="hello"><div><div class="eyebrow">${esc(longD(d))}</div><h1>¡Hola, ${esc(first(data.persona.nombre))}!</h1></div></div>
-<p class="muted" style="margin:0">Tocá el círculo cuando termines cada tarea${peds.length?" y «Comprado» en cada cosa de las compras":""}. Le avisa a la casa al instante.</p>
+<p class="muted" style="margin:0">Tocá el círculo cuando termines cada tarea${peds.length?" y «Comprado» en cada cosa de las compras":""}. Más abajo podés anotar lo que falta comprar y marcar si vino el jardinero o el piscinero. Todo le avisa a la casa al instante.</p>
 <section class="hfsec"><h2>Hoy</h2>${hoy.length?hoy.map(sc).join(""):`<div class="col-empty">No tenés tareas para hoy.</div>`}</section>
 ${proxR.length?`<section class="hfsec"><h2>${ic("bell")} Recordatorios</h2>
 ${"Notification" in window&&Notification.permission!=="granted"?`<button class="btn" id="stNotif">${ic("bell")} Activar avisos en este celular</button>`:""}
@@ -1538,9 +1542,29 @@ ${"Notification" in window&&Notification.permission!=="granted"?`<button class="
 ${peds.map(x=>{ const its=x.items||[], n=its.filter(i=>i.ok).length; return `<section class="hfsec"><h2>${ic("cart")} Compras: ${esc(x.nombre||"")} <span class="muted small">${n} de ${its.length}</span></h2>
 <div class="shop">${its.map(i=>`<div class="it ${i.ok?"ok":""}"><span class="t">${esc(i.txt)}</span>${i.cant?`<span class="q">${esc(i.cant)}</span>`:""}<button class="btn sm ${i.ok?"":"pri"}" data-pid="${x.id}" data-iid="${esc(i.id)}" data-on="${i.ok?0:1}">${i.ok?"Desmarcar":ic("check")+" Comprado"}</button></div>`).join("")}</div>
 ${x.cerrado?`<p class="small" style="margin:0;color:var(--ok)">¡Compraste todo! Ya le avisó a la casa.</p>`:""}</section>`; }).join("")}
+<section class="hfsec"><h2>${ic("cart")} Falta comprar</h2>
+<div class="shop"><form class="add" id="stAdd"><input class="inp" name="txt" maxlength="80" placeholder="¿Qué se terminó? Ej. Detergente" required><input class="inp qty" name="cant" maxlength="20" placeholder="Cant."><button class="btn pri" type="submit" aria-label="Agregar">${ic("plus")}</button></form>
+${lis.length>1?`<div class="add" style="padding-top:0"><select class="inp" form="stAdd" name="lista" aria-label="Lista">${lis.map(l=>`<option value="${l.id}" ${l.id===S.stLista?"selected":""}>${esc(l.nombre)}</option>`).join("")}</select></div>`:""}
+${(lis.length?lis:[{id:null,nombre:""}]).map(l=>{ const xs=comp.filter(c=>!l.id||c.lista===l.id); return xs.length?`${lis.length>1?`<div class="sub">${esc(l.nombre)}</div>`:""}${xs.map(c=>`<div class="it"><span class="t" style="cursor:default">${esc(c.txt)}</span>${c.cant?`<span class="q">${esc(c.cant)}</span>`:""}</div>`).join("")}`:""; }).join("")||`<div class="it"><span class="t muted" style="cursor:default">La lista está vacía.</span></div>`}</div>
+<p class="small muted" style="margin:0">Lo que agregues le aparece al instante a la casa en su lista de compras.</p></section>
+<section class="hfsec"><h2>${ic("leaf")} ¿Vino el jardinero o el piscinero?</h2>
+<form class="panel" id="stVis"><div class="g2"><label class="fld"><span>Quién vino</span><select class="inp" name="servicio">${Object.keys(SVC).map(k=>`<option value="${k}">${esc(svName(k))}</option>`).join("")}</select></label>
+<label class="fld"><span>Cuándo</span><select class="inp" name="fecha">${dOpts}</select></label></div>
+<div class="g2"><label class="fld"><span>Hora que llegó</span><input class="inp" type="time" name="llegada" value="${hm(Date.now())}"></label><label class="fld"><span>Nota (opcional)</span><input class="inp" name="nota" maxlength="300" placeholder="Ej. cortó el césped"></label></div>
+<button class="btn pri" type="submit">${ic("check")} Marcar que vino</button>
+${vis.length?`<div class="rlist">${vis.map(v=>`<div class="rrow"><span class="ri">${ic(SVC[v.servicio]?SVC[v.servicio].ic:"check")}</span><div class="nm"><b>${esc(SVC[v.servicio]?SVC[v.servicio].rol:"Visita")}</b><span>${esc(relD(v.fecha))}${v.llegada?" · "+esc(v.llegada):""}${v.por?" · marcó "+esc(first(v.por)):""}</span></div></div>`).join("")}</div>`:""}</form></section>
 ${prox.length?`<section class="hfsec"><h2>Próximos días</h2>${prox.map(x=>sc(x)).join("")}</section>`:""}</div>`;
     $$("[data-ics]").forEach(b=>b.onclick=()=>{ const r=rems.find(x=>x.id===b.dataset.ics); if(r) downloadIcs(r); });
     const sn=$("#stNotif"); if(sn) sn.onclick=async()=>{ const r=await Notification.requestPermission(); toast(r==="granted"?"Listo: te avisa mientras tengas la página abierta o instalada.":"El celular bloqueó los avisos."); draw(); };
+    $("#stAdd").onsubmit=async e=>{ e.preventDefault(); const f=e.target, b=f.querySelector("button"); const txt=f.txt.value.trim(); if(!txt) return;
+      b.disabled=true; S.stLista=f.lista?f.lista.value:null; const {data:ok,error:er}=await sb.rpc("casa_personal_agregar_compra",{p_token:token,p_lista:f.lista?f.lista.value:null,p_txt:txt,p_cant:f.cant.value.trim()});
+      if(er||!ok){ b.disabled=false; return toast("No se pudo agregar. Revisá internet y volvé a intentar."); }
+      toast(`Agregado: ${txt}`); await draw(); const i=$("#stAdd input[name=txt]"); if(i) i.focus(); };
+    $("#stVis").onsubmit=async e=>{ e.preventDefault(); const f=e.target, b=f.querySelector("button[type=submit]");
+      if(vis.some(v=>v.servicio===f.servicio.value&&v.fecha===f.fecha.value)) return toast("Ese día ya está marcado.");
+      b.disabled=true; const {data:ok,error:er}=await sb.rpc("casa_personal_visita",{p_token:token,p_servicio:f.servicio.value,p_fecha:f.fecha.value,p_llegada:f.llegada.value,p_nota:f.nota.value.trim()});
+      if(er||!ok){ b.disabled=false; return toast("No se pudo guardar. Revisá internet y volvé a intentar."); }
+      toast("¡Listo! Ya le avisó a la casa."); draw(); };
     $$("[data-pid]").forEach(b=>b.onclick=async()=>{ b.disabled=true; const on=b.dataset.on==="1";
       const {data:ok,error:er}=await sb.rpc("casa_personal_comprar",{p_token:token,p_pedido:b.dataset.pid,p_item:b.dataset.iid,p_hecho:on});
       if(er||!ok){ b.disabled=false; toast("No se pudo guardar. Revisá internet y volvé a tocar."); return; }
