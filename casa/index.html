@@ -1,4 +1,5 @@
-<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>Casa · Manejo del hogar</title>
+<!doctype html><html lang="es"><head><meta charset="utf-8">
+<meta name="robots" content="noindex,nofollow"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>Casa · Manejo del hogar</title>
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -609,6 +610,28 @@ a.btn.pri,a.btn.wa-b{color:#fff}
 .ddots i.rem{background:var(--tape)} .ddots i.vis{background:var(--c4)}
 .cal .cc.aus{border-left-color:var(--bad)} .cal .cc.ped{border-left-color:var(--accent)}
 .ddots i.aus{background:var(--bad)} .ddots i.ped{background:var(--accent)}
+.chart{width:100%;height:auto;display:block;overflow:visible}
+.chart text{font-size:11px;fill:var(--ink3);font-family:var(--f-mono)}
+.chart .grid{stroke:var(--line2);stroke-dasharray:3 4}
+.legend{display:flex;gap:12px;flex-wrap:wrap;font-size:12px;color:var(--ink2);align-items:center}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px;vertical-align:-1px}
+.hbars{display:grid;gap:7px}
+.hb{display:grid;grid-template-columns:minmax(70px,30%) 1fr auto;gap:8px;align-items:center;font-size:13px}
+.hb .hl{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hb .ht{height:12px;background:var(--line2);border-radius:99px;overflow:hidden}
+.hb .ht i{display:block;height:100%;border-radius:99px}
+.hb .hv{font-family:var(--f-mono);font-size:12px;color:var(--ink2)}
+.donuts{display:flex;gap:14px;flex-wrap:wrap}
+.donuts .dnut{display:grid;justify-items:center;gap:2px;font-size:12px;color:var(--ink2);width:76px}
+.donut{width:70px;height:70px}
+.donut .dv{font-size:17px;font-weight:600;fill:var(--ink);font-family:var(--f-mono)}
+.rtab{width:100%;border-collapse:collapse;font-size:13px}
+.rtab th{text-align:left;font-size:11px;color:var(--ink3);font-weight:600;padding:4px 6px;border-bottom:1px solid var(--line)}
+.rtab td{padding:6px;border-bottom:1px solid var(--line2);font-family:var(--f-mono);font-size:12.5px}
+.rtab td:first-child{font-family:inherit;display:flex;gap:6px;align-items:center}
+.rtab td.bad{color:var(--bad);font-weight:600}
+.kv{margin-bottom:14px;grid-template-columns:repeat(auto-fill,minmax(150px,1fr))}
+.kv b{font-size:16px}
 .pcard.pend{border-style:dashed;box-shadow:none;cursor:default}
 .av.wait{background:var(--tapebg);color:var(--warn)}
 .ausl{all:unset;cursor:pointer;font-size:12px;color:var(--ink2);text-decoration:underline;text-underline-offset:2px}
@@ -709,7 +732,8 @@ down:'<path d="M12 4v12M7 11l5 5 5-5M5 20h14"/>',
 up:'<path d="M12 20V8M7 13l5-5 5 5M5 4h14"/>',
 cloud:'<path d="M7 18a4.5 4.5 0 0 1-.5-9A6 6 0 0 1 18 8a4.5 4.5 0 0 1-.5 10z"/>',
 money:'<rect x="2.5" y="6" width="19" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/><path d="M6 9.5v5M18 9.5v5"/>',
-drop:'<path d="M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z"/>'
+drop:'<path d="M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z"/>',
+chart:'<path d="M4 20V4M4 20h16"/><rect x="7" y="12" width="3" height="5" rx=".6"/><rect x="12" y="8" width="3" height="9" rx=".6"/><rect x="17" y="5" width="3" height="12" rx=".6"/>'
 };
 const ic=(k,c="")=>`<svg class="ic ${c}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${I[k]||""}</svg>`;
 
@@ -727,7 +751,7 @@ const PH=[7.2,7.6], CL=[1,3];
 /* ---------- estado ---------- */
 const now=new Date();
 const S={mode:"boot",items:{},hogar:{id:"",nombre:"Mi casa",pais:"595"},uid:null,myName:"",myEmail:"",miembros:[],
-  view:"home",tv:"hoy",lista:null,cal:{y:now.getFullYear(),m:now.getMonth(),sel:TODAY()},session:null,staff:null};
+  view:"home",tv:"hoy",res:{y:now.getFullYear(),m:now.getMonth()},lista:null,cal:{y:now.getFullYear(),m:now.getMonth(),sel:TODAY()},session:null,staff:null};
 const live=()=>S.mode==="live";
 const all=tipo=>Object.values(S.items).filter(x=>x.tipo===tipo);
 const personal=(todos=false)=>all("personal").filter(p=>todos||(p.activo!==false&&!p.pendiente)).sort((a,b)=>(a.orden||0)-(b.orden||0)||String(a.nombre).localeCompare(b.nombre,"es"));
@@ -836,9 +860,9 @@ function waOneTask(t){ const p=P(t.resp); const d=t.fecha?` para el ${longD(t.fe
   return `¡Hola ${p?first(p.nombre):""}! Te paso una tarea${d}: «${t.titulo}».${t.nota?"\n"+t.nota:""}${repeats(t)?"\n("+repLabel(t)+")":""}${live()&&p&&p.token?`\n\nTus tareas: ${staffLink(p)}`:""}`; }
 
 /* ---------- interfaz: estructura ---------- */
-const NAV=[["home","Inicio","home"],["tareas","Tareas","boards"],["cal","Calendario","cal"],["compras","Compras","cart"],["servicios","Jardín y piscina","leaf"],["recordatorios","Recordatorios","bell"],["personal","Personal","team"],["hist","Historial","hist"]];
+const NAV=[["home","Inicio","home"],["tareas","Tareas","boards"],["cal","Calendario","cal"],["compras","Compras","cart"],["servicios","Jardín y piscina","leaf"],["recordatorios","Recordatorios","bell"],["personal","Personal","team"],["resumen","Resumen","chart"],["hist","Historial","hist"]];
 const TABS=[["home","Inicio","home"],["tareas","Tareas","boards"],["compras","Compras","cart"],["servicios","Jardín","leaf"],["more","Más","more"]];
-const TITLES={home:"Inicio",tareas:"Tareas",cal:"Calendario",compras:"Compras",servicios:"Jardín y piscina",recordatorios:"Recordatorios",personal:"Personal",hist:"Historial",ajustes:"Ajustes"};
+const TITLES={home:"Inicio",tareas:"Tareas",cal:"Calendario",compras:"Compras",servicios:"Jardín y piscina",recordatorios:"Recordatorios",personal:"Personal",resumen:"Resumen",hist:"Historial",ajustes:"Ajustes"};
 function renderSide(){
   const ps=personal(); const pend=comprasPend().length;
   $("#side").innerHTML=`<div class="brand"><img class="mkc" src="icon-192.png" alt=""><div class="sys"><b>Casa</b><span>${esc(S.hogar.nombre)}</span></div></div>
@@ -865,6 +889,7 @@ function render(){
   const v=$("#view"); const sy=window.scrollY;
   const f=VIEWS[S.view]||VIEWS.home; v.innerHTML=f();
   if(S.keepScroll) window.scrollTo(0,sy); S.keepScroll=false;
+  if(S.view==="ajustes"&&live()&&S.admin) loadAut();
 }
 function go(v){ S.view=v; ls.set("casa.view",v); window.scrollTo(0,0); render(); }
 
@@ -896,7 +921,7 @@ VIEWS.home=()=>{
 <button class="stat" data-act="go" data-v="compras"><span class="v">${comprasPend().length}</span><span class="l">Para comprar</span></button>
 <button class="stat ${lateRems.length?"bad":rems.some(x=>x.d===d)?"warn":""}" data-act="go" data-v="recordatorios"><span class="v">${rems.length+lateRems.length}</span><span class="l">Recordatorios (7 días)</span></button></div>
 ${missed.length?`<div class="hfsec">${missed.map(m=>`<div class="alert">${ic("warn")}<span><b>${SVC[m.k].n}:</b> no hay visita registrada el ${esc(longD(m.d))}.</span><span class="sp"></span><button class="btn sm" data-act="newVisita" data-k="${m.k}" data-d="${m.d}">Registrar</button></div>`).join("")}</div>`:""}
-<section class="hfsec"><div class="sec-h"><h2>Hoy en casa</h2></div>
+<section class="hfsec"><div class="sec-h"><h2>Hoy en casa</h2><span class="sp"></span><button class="btn ghost sm" data-act="go" data-v="resumen">${ic("chart")} Resumen del mes</button></div>
 ${faltan.map(p=>{ const a=ausenteOn(p.id,d); return `<div class="alert warn">${ic("user")}<span><b>${esc(p.nombre)}</b> no viene hoy: ${esc(a.motivo||"ausencia")}${a.hasta&&a.hasta!==a.desde?" (hasta el "+esc(fmtD(a.hasta))+")":""}.</span><span class="sp"></span><button class="btn sm" data-act="editAus" data-id="${a.id}">Ver</button></div>`; }).join("")}
 ${vienen.length||svcHoy.length?`<div class="hflist">${vienen.map(p=>{ const n=instDay(d,p.id).filter(x=>!isDone(x.t,x.d)).length;
   return `<div class="prow">${avHTML(p,"lg")}<div class="nm"><b>${esc(p.nombre)}</b><span>${esc(p.rol||"")}${p.entrada?" · "+esc(p.entrada)+(p.salida?"–"+esc(p.salida):""):""} · ${n} tarea${n===1?"":"s"}</span></div>${okTel(p.cel)?`<a class="icon-btn wa" href="${esc(waHref(p.cel,waTasksText(p)))}" target="_blank" rel="noopener" aria-label="Mandar tareas por WhatsApp" data-act="waLog" data-id="${p.id}">${ic("chat")}</a>`:""}</div>`; }).join("")}
@@ -1013,6 +1038,66 @@ ${!sd.ts.length&&!sd.rs.length&&!sd.vs.length&&!sd.au.length&&!sd.pe.length&&!sd
 ${sd.hi.length?`<div class="eyebrow" style="margin-top:6px">Lo que quedó registrado</div><div class="daylog">${sd.hi.map(histRow).join("")}</div>`:""}</div>`;
 };
 
+/* ---------- resumen y gráficos ---------- */
+const svgW=420;
+function barsV(data,{h=150,stack=[["v","var(--accent)"]],fmt=v=>v}={}){ // data: [{l,v...}]
+  const n=data.length||1, max=Math.max(1,...data.map(d=>stack.reduce((t,[k])=>t+(+d[k]||0),0))), bw=svgW/n, pad=Math.min(6,bw*.2), ch=h-20;
+  return `<svg class="chart" viewBox="0 0 ${svgW} ${h}" role="img">${[0.5,1].map(f=>`<line x1="0" x2="${svgW}" y1="${ch-ch*f}" y2="${ch-ch*f}" class="grid"/>`).join("")}
+${data.map((d,i)=>{ let y=ch; return stack.map(([k,c])=>{ const v=+d[k]||0, hh=v/max*ch; y-=hh; return hh>0?`<rect x="${i*bw+pad}" y="${y}" width="${bw-2*pad}" height="${hh}" rx="2" fill="${c}"><title>${esc(d.l)}: ${fmt(v)}</title></rect>`:""; }).join("")+`<text x="${i*bw+bw/2}" y="${h-5}" text-anchor="middle">${esc(d.l)}</text>`; }).join("")}</svg>`; }
+function barsH(rows,{color="var(--accent)",fmt=v=>v}={}){ const max=Math.max(1,...rows.map(r=>r.v));
+  return `<div class="hbars">${rows.map(r=>`<div class="hb"><span class="hl">${esc(r.l)}</span><span class="ht"><i style="width:${Math.max(2,r.v/max*100)}%;background:${r.c||color}"></i></span><span class="hv">${esc(fmt(r.v))}</span></div>`).join("")}</div>`; }
+function lineChart(pts,{h=140,band=null,min=0,max=1}={}){ if(pts.length<2) return `<p class="muted small" style="margin:0">Hacen falta al menos dos visitas con medición.</p>`;
+  const ch=h-20, X=i=>16+i*(svgW-32)/(pts.length-1), Y=v=>ch-(v-min)/(max-min)*(ch-10)-5;
+  return `<svg class="chart" viewBox="0 0 ${svgW} ${h}" role="img">${band?`<rect x="0" width="${svgW}" y="${Y(band[1])}" height="${Y(band[0])-Y(band[1])}" fill="var(--okbg)"/>`:""}
+<polyline fill="none" stroke="var(--accent)" stroke-width="2.5" points="${pts.map((p,i)=>X(i)+","+Y(p.v)).join(" ")}"/>${pts.map((p,i)=>`<circle cx="${X(i)}" cy="${Y(p.v)}" r="4" fill="${band&&(p.v<band[0]||p.v>band[1])?"var(--bad)":"var(--accent)"}"><title>${esc(p.l)}: ${p.v}</title></circle><text x="${X(i)}" y="${h-5}" text-anchor="middle">${esc(p.l)}</text>`).join("")}</svg>`; }
+const donut=(pct,label)=>{ const r=34, c=2*Math.PI*r, p=Math.max(0,Math.min(100,pct));
+  return `<svg viewBox="0 0 90 90" class="donut"><circle cx="45" cy="45" r="${r}" fill="none" stroke="var(--line2)" stroke-width="10"/><circle cx="45" cy="45" r="${r}" fill="none" stroke="${p>=80?"var(--ok)":p>=50?"var(--warn)":"var(--bad)"}" stroke-width="10" stroke-dasharray="${c*p/100} ${c}" transform="rotate(-90 45 45)" stroke-linecap="round"/><text x="45" y="50" text-anchor="middle" class="dv">${Math.round(p)}%</text></svg><span>${label}</span>`; };
+
+VIEWS.resumen=()=>{ const {y,m}=S.res, today=TODAY(); const d0=ymd(new Date(y,m,1)), dN=ymd(new Date(y,m+1,0)); const fin=dN<today?dN:today; const mes=d0.slice(0,7);
+  const days=[]; for(let d=d0; d<=fin; d=addD(d,1)) days.push(d);
+  const ts=tareas(); const ps=personal();
+  const perDay=days.map(d=>{ let ok=0,no=0; ts.forEach(t=>{ if(t.creada&&ymd(new Date(t.creada))>d) return; if(occurs(t,d)) (isDone(t,d)?ok++:no++); }); return {d,ok,no}; });
+  ts.filter(t=>!repeats(t)&&!t.fecha&&(t.hechas||{}).x&&ymd(new Date(t.hechas.x.ts))>=d0&&ymd(new Date(t.hechas.x.ts))<=dN).forEach(t=>{ const k=ymd(new Date(t.hechas.x.ts)); const r=perDay.find(x=>x.d===k); if(r) r.ok++; });
+  const okT=perDay.reduce((a,x)=>a+x.ok,0), noT=perDay.reduce((a,x)=>a+x.no,0), pct=okT+noT?okT/(okT+noT)*100:0;
+  const ausM=all("ausencia").filter(a=>P(a.persona)); const ausDiasMes=p=>days.filter(d=>tocaVenir(p,d)&&ausenteOn(p.id,d)).length;
+  const totAus=ps.reduce((t,p)=>t+ausDiasMes(p),0);
+  const vis=visitas().filter(v=>v.fecha.startsWith(mes)); const gasto=vis.reduce((t,v)=>t+(+v.monto||0),0), debe=visitas().filter(v=>!v.pagado&&+v.monto>0).reduce((t,v)=>t+(+v.monto||0),0);
+  const peds=pedidos().filter(x=>ymd(new Date(x.ts)).startsWith(mes));
+  const remM=all("recordatorio").filter(r=>r.cat==="Pago"); let pagos=0; days.forEach(d=>remM.forEach(r=>{ if(occurs(r,d)) pagos++; }));
+  // personas
+  const rowsP=ps.map(p=>{ let ok=0,tot=0; days.forEach(d=>ts.forEach(t=>{ if(t.resp!==p.id||!occurs(t,d)) return; if(t.creada&&ymd(new Date(t.creada))>d) return; tot++; if(isDone(t,d)) ok++; }));
+    const prog=days.filter(d=>tocaVenir(p,d)).length, au=ausDiasMes(p); return {p,ok,tot,prog,au}; });
+  // gastos últimos 6 meses
+  const g6=[]; for(let i=5;i>=0;i--){ const dd=new Date(y,m-i,1), k=ymd(dd).slice(0,7); const vs=visitas().filter(v=>v.fecha.startsWith(k)); g6.push({l:MES3[dd.getMonth()],jardin:vs.filter(v=>v.servicio==="jardin").reduce((t,v)=>t+(+v.monto||0),0),piscina:vs.filter(v=>v.servicio==="piscina").reduce((t,v)=>t+(+v.monto||0),0)}); }
+  // productos más pedidos (todo el historial)
+  const cnt={}; pedidos().forEach(x=>(x.items||[]).forEach(i=>{ const k=String(i.txt||"").trim(); if(k) cnt[k]=(cnt[k]||0)+1; }));
+  all("lista").forEach(L=>Object.entries(L.frec||{}).forEach(([k,v])=>{ if(!cnt[k]||cnt[k]<v) cnt[k]=v; }));
+  const top=Object.entries(cnt).sort((a,b)=>b[1]-a[1]).slice(0,8).map(([l,v])=>({l,v}));
+  const pool=visitas("piscina").filter(v=>v.ph||v.cloro).slice(0,10).reverse();
+  const sp=perDay.length>16?perDay.slice(-16):perDay;
+  return `<div class="calbar"><button class="icon-btn" data-act="resM" data-n="-1" aria-label="Mes anterior">${ic("chevl")}</button><h2>${MES[m]} ${y}</h2><button class="icon-btn" data-act="resM" data-n="1" aria-label="Mes siguiente">${ic("chev")}</button></div>
+<div class="kv">
+<div class="${pct>=80?"ok":pct>=50?"warn":"bad"}"><b>${Math.round(pct)}%</b><span>Tareas cumplidas</span></div>
+<div><b>${okT}</b><span>Tareas hechas</span></div>
+<div class="${totAus?"warn":""}"><b>${totAus}</b><span>Días de ausencia</span></div>
+<div><b>Gs. ${gs(gasto)}</b><span>Jardín y piscina</span></div>
+<div class="${debe?"bad":"ok"}"><b>Gs. ${gs(debe)}</b><span>Visitas sin pagar</span></div>
+<div><b>${peds.length}</b><span>Pedidos de compras</span></div></div>
+<div class="pgrid2">
+<section class="panel"><div class="hd"><h2>${ic("check")} Tareas por día</h2></div>${days.length?barsV(sp.map(x=>({l:String(pYmd(x.d).getDate()),ok:x.ok,no:x.no})),{stack:[["ok","var(--ok)"],["no","var(--line)"]]}):`<p class="muted small" style="margin:0">Este mes todavía no empezó.</p>`}
+<div class="legend"><span><i style="background:var(--ok)"></i>Hechas</span><span><i style="background:var(--line)"></i>Sin hacer</span></div></section>
+<section class="panel"><div class="hd"><h2>${ic("team")} Cumplimiento por persona</h2></div>
+${rowsP.length?`<div class="donuts">${rowsP.map(r=>`<div class="dnut">${donut(r.tot?r.ok/r.tot*100:0,esc(first(r.p.nombre)))}</div>`).join("")}</div>
+<table class="rtab"><thead><tr><th>Persona</th><th>Tareas</th><th>Días</th><th>Ausente</th></tr></thead><tbody>${rowsP.map(r=>`<tr><td>${avHTML(r.p)} ${esc(first(r.p.nombre))}</td><td>${r.ok}/${r.tot}</td><td>${r.prog-r.au}/${r.prog}</td><td class="${r.au?"bad":""}">${r.au}</td></tr>`).join("")}</tbody></table>`:`<p class="muted small" style="margin:0">Cargá a tu personal para ver esto.</p>`}</section>
+<section class="panel"><div class="hd"><h2>${ic("money")} Gastos de jardín y piscina</h2></div>${barsV(g6,{stack:[["jardin","var(--c4)"],["piscina","var(--c6)"]],fmt:v=>"Gs. "+gs(v)})}
+<div class="legend"><span><i style="background:var(--c4)"></i>Jardín</span><span><i style="background:var(--c6)"></i>Piscina</span><span class="sp"></span><span>Total 6 meses: <b>Gs. ${gs(g6.reduce((t,x)=>t+x.jardin+x.piscina,0))}</b></span></div></section>
+<section class="panel"><div class="hd"><h2>${ic("cart")} Lo que más se compra</h2></div>${top.length?barsH(top,{fmt:v=>v+"×"}):`<p class="muted small" style="margin:0">Todavía no hay pedidos.</p>`}</section>
+<section class="panel"><div class="hd"><h2>${ic("pool")} Piscina: pH</h2></div>${lineChart(pool.filter(v=>v.ph).map(v=>({l:fmtD(v.fecha),v:+v.ph})),{band:PH,min:6.6,max:8.4})}<p class="muted small" style="margin:0">La franja verde es el rango ideal (${PH[0]}–${PH[1]}).</p></section>
+<section class="panel"><div class="hd"><h2>${ic("drop")} Piscina: cloro</h2></div>${lineChart(pool.filter(v=>v.cloro).map(v=>({l:fmtD(v.fecha),v:+v.cloro})),{band:CL,min:0,max:5})}<p class="muted small" style="margin:0">Rango ideal ${CL[0]}–${CL[1]} ppm.</p></section>
+${ausM.length?`<section class="panel"><div class="hd"><h2>${ic("cal")} Ausencias por motivo (todo el año)</h2></div>${barsH(MOTIVOS.map(mo=>({l:mo,v:ausM.filter(a=>a.motivo===mo&&a.desde.startsWith(String(y))).reduce((t,a)=>t+ausDias(a),0),c:"var(--bad)"})).filter(r=>r.v),{fmt:v=>v+" d"})}</section>`:""}
+</div>`;
+};
+
 VIEWS.hist=()=>{ const h=all("hist").sort((a,b)=>b.ts-a.ts).slice(0,300);
   if(!h.length) return `<div class="empty"><h2>Historial</h2><p>Acá queda registrado lo que se hace en la casa: tareas hechas, visitas, compras y cambios.</p></div>`;
   const g={}; h.forEach(e=>{ const k=ymd(new Date(e.ts)); (g[k]=g[k]||[]).push(e); });
@@ -1032,19 +1117,29 @@ VIEWS.ajustes=()=>{ const th=ls.get("casa.theme")||"auto";
 ${live()?`<p class="small" style="margin:0">Entraste como <b>${esc(S.myEmail)}</b>. Los cambios se ven al instante en el celular de los otros dueños.</p>
 <div class="mlist">${S.miembros.map(m=>`<div class="mrow"><span class="av" style="--ac:var(--c2)">${esc(initials(m.nombre||m.email))}</span><span class="nm"><b>${esc(m.nombre||m.email)}</b><span>${esc(m.email)}</span></span></div>`).join("")}</div>
 <form id="fInv" class="row"><input class="inp" type="email" name="email" placeholder="mail de otro dueño de casa" style="flex:1" required><button class="btn" type="submit">Invitar</button></form>
-<p class="muted small" style="margin:0">Le llega el acceso cuando entra a Casa con ese mail. El personal no necesita cuenta.</p>
+<p class="muted small" style="margin:0">Le llega el acceso cuando entra a Casa con ese mail${S.admin?"":" (también tiene que estar autorizado para la prueba)"}. El personal no necesita cuenta.</p>
 ${loadLocalCount()?`<button class="btn" data-act="uploadLocal">${ic("up")} Subir los datos que tenía en este celular (${loadLocalCount()})</button>`:""}
 <div class="row"><button class="btn" data-act="logout">Salir</button></div>`
 :`<p class="small" style="margin:0">Estás usando Casa sin cuenta: todo se guarda solo en este celular. Para compartir la casa con otro dueño y que tu personal marque sus tareas desde su enlace, entrá con tu mail.</p>
 ${sb?`<div><button class="btn pri" data-act="toLogin">Entrar con mi mail</button></div>`:""}`}
 <div class="row"><button class="btn" data-act="export">${ic("down")} Descargar copia</button><label class="btn">${ic("up")} Restaurar copia<input type="file" accept="application/json,.json" id="impFile" hidden></label></div>
 ${!live()?`<div class="row"><button class="btn ghost" data-act="seed">Cargar datos de ejemplo</button><button class="btn danger ghost" data-act="wipe">Borrar todo</button></div>`:""}</section>
+${live()&&S.admin?`<section class="panel"><div class="hd"><h2>${ic("team")} Clientes autorizados</h2></div>
+<p class="small" style="margin:0">Solo entran los mails de esta lista. Si alguien reenvía el enlace, la otra persona no puede entrar hasta que la agregues acá.</p>
+<div class="row"><span class="mono small" style="flex:1;min-width:0;overflow-wrap:anywhere">${esc(APP_URL)}</span><button class="btn sm" data-act="autCopy">${ic("link")} Copiar</button></div>
+<form id="fAut" class="row"><input class="inp" type="email" name="email" placeholder="mail del cliente" style="flex:2;min-width:180px" required><input class="inp" name="nota" placeholder="Nombre (opcional)" style="flex:1;min-width:120px" maxlength="120"><button class="btn pri" type="submit">Autorizar</button></form>
+<div class="mlist" id="autList"><p class="muted small" style="margin:0">Cargando…</p></div></section>`:""}
 <section class="panel"><div class="hd"><h2>${ic("bell")} Avisos y apariencia</h2></div>
 <p class="small" style="margin:0">Con la app abierta te avisa a la hora de cada recordatorio. Para que te avise aunque esté cerrada, abrí el recordatorio y tocá <b>Agregar a mi calendario</b>.</p>
 <div><button class="btn" data-act="notifPerm">${ic("bell")} ${"Notification" in window&&Notification.permission==="granted"?"Avisos activados":"Activar avisos"}</button></div>
 <div class="seg">${[["auto","Automática","auto"],["light","Clara","sun"],["dark","Oscura","moon"]].map(([k,n,i])=>`<button data-act="theme" data-v="${k}" aria-pressed="${th===k}">${ic(i)} ${n}</button>`).join("")}</div>
 <p class="muted small" style="margin:0">Para tenerla como app: en el navegador del celular tocá <b>Compartir → Agregar a inicio</b> (iPhone) o <b>⋮ → Instalar app</b> (Android).</p></section></div>`;
 };
+async function loadAut(){ const el=$("#autList"); if(!el) return; const {data,error}=await sb.rpc("casa_autorizados_ver");
+  if(error){ el.innerHTML=`<p class="muted small" style="margin:0">No se pudo leer la lista.</p>`; return; }
+  el.innerHTML=(data||[]).map(a=>{ const txt=`Hola${a.nota?" "+a.nota:""}, te paso la prueba de Casa para manejar tu hogar: ${APP_URL}\nEntrá con este mail: ${a.email} (te llega un código). Es una invitación personal, por favor no la reenvíes.`;
+    return `<div class="mrow"><span class="av" style="--ac:var(--c${a.entro?1:7})">${esc(initials(a.nota||a.email))}</span><span class="nm"><b>${esc(a.nota||a.email)}</b><span>${esc(a.email)} · ${a.entro?"ya entró":"todavía no entró"}</span></span>
+<a class="icon-btn wa" href="${esc(waHref("",txt))}" target="_blank" rel="noopener" aria-label="Mandar por WhatsApp" title="Mandar por WhatsApp">${ic("chat")}</a><button class="icon-btn" data-act="autDel" data-e="${esc(a.email)}" aria-label="Quitar acceso" title="Quitar acceso">${ic("trash")}</button></div>`; }).join("")||`<p class="muted small" style="margin:0">Todavía no autorizaste a nadie.</p>`; }
 function loadLocalCount(){ try{ const j=JSON.parse(ls.get(LOCAL_KEY)||"null"); return j&&j.items?Object.values(j.items).filter(x=>x.tipo!=="hist").length:0; }catch(e){ return 0; } }
 
 /* ---------- modales ---------- */
@@ -1113,13 +1208,13 @@ ${id?`<button type="button" class="toggle" id="pAct" aria-pressed="${p.activo!==
   const db=$("#pDel"); if(db) db.onclick=()=>confirmDel(db,()=>{ del(id); log(`quitó a ${p.nombre}`,"del"); closeModal(); });
 }
 function inviteModal(){
-  modal(`${mHead("Invitar por WhatsApp")}<form class="sheet-b" id="fInv">
+  modal(`${mHead("Invitar por WhatsApp")}<form class="sheet-b" id="fInvP">
 <div class="help">Se abre tu WhatsApp, elegís a la persona y le llega un enlace. Ella completa su nombre y su número, y queda agregada a tu personal sola.</div>
 <label class="fld"><span>Qué hace</span><select class="inp" name="rol">${ROLES.map(r=>`<option>${r}</option>`).join("")}</select></label>
 <div class="fld"><span>Días que viene</span>${daysPick([1,2,3,4,5])}</div>
 <div class="g2"><label class="fld"><span>Entrada</span><input class="inp" type="time" name="entrada" value="07:00"></label><label class="fld"><span>Salida</span><input class="inp" type="time" name="salida" value="16:00"></label></div>
 <div class="row"><button class="btn wa-b" type="submit">${ic("chat")} Abrir WhatsApp</button>${navigator.share?`<button class="btn" type="button" id="invSh">${ic("link")} Otra app</button>`:""}</div></form>`,"narrow");
-  wireSheet(); const f=$("#fInv");
+  wireSheet(); const f=$("#fInvP");
   const crear=()=>{ const o={id:rid(),tipo:"personal",pendiente:true,nombre:"",cel:"",rol:f.rol.value,dias:readDays(f),entrada:f.entrada.value,salida:f.salida.value,notas:"",token:tok(),color:personal(true).length%NC,orden:Date.now(),activo:true,invitado:Date.now()};
     put(o); log(`invitó por WhatsApp a una persona nueva (${o.rol})`,"wa",o.id); return o; };
   f.onsubmit=e=>{ e.preventDefault(); const o=crear(); window.open(waHref("",invText(o)),"_blank","noopener"); closeModal(); go("personal"); toast("Cuando complete sus datos aparece en tu personal."); };
@@ -1250,7 +1345,7 @@ ${navigator.share?`<button class="pick" id="shNat"><span class="av none">${ic("l
 /* ---------- eventos ---------- */
 const ACT={
   go:el=>go(el.dataset.v),
-  more:()=>modal(`${mHead("Más")}<div class="sheet-b"><div class="more-sheet">${[["cal","Calendario","cal"],["recordatorios","Recordatorios","bell"],["personal","Personal","team"],["hist","Historial","hist"],["ajustes","Ajustes","gear"]].map(([k,n,i])=>`<button data-act="goClose" data-v="${k}">${ic(i)} ${n}</button>`).join("")}</div></div>`,"narrow"),
+  more:()=>modal(`${mHead("Más")}<div class="sheet-b"><div class="more-sheet">${[["cal","Calendario","cal"],["recordatorios","Recordatorios","bell"],["personal","Personal","team"],["resumen","Resumen y gráficos","chart"],["hist","Historial","hist"],["ajustes","Ajustes","gear"]].map(([k,n,i])=>`<button data-act="goClose" data-v="${k}">${ic(i)} ${n}</button>`).join("")}</div></div>`,"narrow"),
   goClose:el=>{ $("#layer").innerHTML=""; go(el.dataset.v); },
   close:()=>closeModal(),
   newTask:el=>taskModal(null,{resp:el.dataset.resp,fecha:el.dataset.fecha}),
@@ -1290,6 +1385,7 @@ const ACT={
   newItemFocus:()=>{ if(S.view!=="compras") go("compras"); setTimeout(()=>{ const i=$("#itTxt"); i&&i.focus(); },50); },
   shareLista:()=>shareListaModal(),
   calM:el=>{ let {y,m}=S.cal; m+=+el.dataset.n; if(m<0){m=11;y--;} if(m>11){m=0;y++;} S.cal={...S.cal,y,m}; render(); },
+  resM:el=>{ let {y,m}=S.res; m+=+el.dataset.n; if(m<0){m=11;y--;} if(m>11){m=0;y++;} S.res={y,m}; render(); },
   calToday:()=>{ S.cal={y:now.getFullYear(),m:now.getMonth(),sel:TODAY()}; render(); },
   calSel:el=>{ S.cal.sel=el.dataset.d; S.keepScroll=true; render(); },
   theme:el=>{ const v=el.dataset.v; if(v==="auto"){ ls.del("casa.theme"); document.documentElement.removeAttribute("data-theme"); } else { ls.set("casa.theme",v); document.documentElement.setAttribute("data-theme",v); } render(); },
@@ -1298,7 +1394,9 @@ const ACT={
   export:()=>{ const blob=new Blob([JSON.stringify({app:"casa",v:1,hogar:S.hogar,items:S.items},null,1)],{type:"application/json"}); const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download="casa-copia-"+TODAY()+".json"; document.body.appendChild(a); a.click(); setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); },500); },
   seed:()=>{ seed(); toast("Listo: cargué datos de ejemplo para que la pruebes."); go("home"); },
   wipe:el=>confirmDel(el,()=>{ S.items={}; saveLocal(); toast("Se borraron todos los datos de este celular."); go("home"); }),
-  toLogin:()=>{ S.mode="boot"; showLogin(); },
+  toLogin:()=>{ S.mode="boot"; ls.del("casa.modo"); showLogin(); },
+  autDel:async el=>{ const {error}=await sb.rpc("casa_desautorizar",{p_email:el.dataset.e}); if(error) return onErr(error); toast(`${el.dataset.e} ya no puede entrar.`); loadAut(); },
+  autCopy:async()=>{ try{ await navigator.clipboard.writeText(APP_URL); toast("Enlace copiado."); }catch(e){ prompt("Enlace:",APP_URL); } },
   logout:async()=>{ await sb.auth.signOut(); location.hash=""; location.reload(); },
   uploadLocal:async el=>{ try{ const j=JSON.parse(ls.get(LOCAL_KEY)||"null"); if(!j) return; el.disabled=true; const xs=Object.values(j.items).filter(x=>x.tipo!=="hist");
     xs.forEach(x=>{ if(x.tipo==="personal"&&!x.token) x.token=tok(); S.items[x.id]=x; });
@@ -1322,6 +1420,8 @@ document.addEventListener("submit",e=>{
     if(live()){ sb.from("casa_hogares").update({nombre:S.hogar.nombre,pais:S.hogar.pais}).eq("id",S.hogar.id).then(({error})=>error&&onErr(error));
       sb.from("casa_miembros").update({nombre:S.myName}).eq("hogar_id",S.hogar.id).eq("user_id",S.uid).then(()=>loadMiembros()); }
     toast("Guardado."); render(); }
+  if(e.target.id==="fAut"){ e.preventDefault(); const f=e.target, em=f.email.value.trim().toLowerCase(); if(!okMail(em)) return;
+    sb.rpc("casa_autorizar",{p_email:em,p_nota:f.nota.value.trim()}).then(({data,error})=>{ if(error||!data) return onErr(error||{}); f.reset(); toast(`Listo: ${em} ya puede entrar. Mandale el enlace por WhatsApp desde la lista.`); loadAut(); }); }
   if(e.target.id==="fInv"){ e.preventDefault(); const em=e.target.email.value.trim().toLowerCase(); if(!okMail(em)) return;
     sb.from("casa_invitaciones").upsert({hogar_id:S.hogar.id,email:em}).then(({error})=>{ if(error) return onErr(error); toast(`Listo: ${em} va a ver esta casa cuando entre con su mail.`,{label:"Avisarle por WhatsApp",href:waHref("",`Te sumé a «${S.hogar.nombre}» en Casa. Entrá acá con tu mail (${em}): ${APP_URL}`)}); e.target.reset(); }); }
 },true);
@@ -1437,9 +1537,7 @@ function showLogin(msg){
   $("#login").hidden=false;
   loginBody(`<p>Tu personal, sus tareas, las compras, el jardín y la piscina, en un solo lugar.</p>
 <form id="lf1" autocomplete="on"><label class="fld"><span>Tu mail</span><input class="inp" type="email" id="lemail" required autocomplete="email" inputmode="email" placeholder="nombre@ejemplo.com" value="${esc(ls.get("casa.email")||"")}"></label>
-<button class="btn pri" type="submit">Recibir código por mail</button>${msg?`<p class="msg err">${esc(msg)}</p>`:""}<p class="msg">Entran con mail solo los dueños de casa. El personal no necesita cuenta: se agrega con su WhatsApp.</p></form>
-<button type="button" class="link" id="lLocal">Usar sin cuenta, solo en este celular</button>`);
-  $("#lLocal").onclick=startLocal;
+<button class="btn pri" type="submit">Recibir código por mail</button>${msg?`<p class="msg err">${esc(msg)}</p>`:""}<p class="msg">Casa está en prueba y es solo por invitación: entrás con el mail que te autorizaron. El personal no necesita cuenta, entra con su enlace de WhatsApp.</p></form>`);
   $("#lf1").addEventListener("submit",async e=>{ e.preventDefault(); const email=$("#lemail").value.trim().toLowerCase(); if(!okMail(email)) return;
     const b=e.target.querySelector("button"); b.disabled=true; b.textContent="Enviando…"; ls.set("casa.email",email);
     const {error}=await sb.auth.signInWithOtp({email,options:{shouldCreateUser:true,emailRedirectTo:APP_URL}});
@@ -1456,15 +1554,17 @@ function showCode(email,msg){
     if(error) return showCode(email,"El código no es válido o venció. Pedí uno nuevo.");
     startSession(data.session); });
 }
-function noDb(){ loginBody(`<form><p class="msg">Tu cuenta funciona, pero la base de datos de Casa todavía no está preparada (falta correr <b>casa/supabase.sql</b> en Supabase).</p><p class="msg">Mientras tanto podés usarla sin cuenta, con los datos guardados en este celular.</p><button type="button" class="btn pri" id="lLoc2">Usar sin cuenta</button><button type="button" class="link" id="lOut">Salir</button></form>`);
-  $("#lLoc2").onclick=startLocal; $("#lOut").onclick=()=>sb.auth.signOut().then(()=>showLogin()); }
+function noDb(){ loginBody(`<form><p class="msg">Tu cuenta funciona, pero la base de datos de Casa todavía no está preparada (falta correr <b>casa/supabase.sql</b> en Supabase).</p><button type="button" class="link" id="lOut">Salir</button></form>`);
+  $("#lOut").onclick=()=>sb.auth.signOut().then(()=>showLogin()); }
+function noAuth(){ loginBody(`<form><p class="msg">Casa está en prueba y es solo por invitación. El mail <b>${esc(S.myEmail)}</b> todavía no está autorizado.</p><p class="msg">Pedile acceso a quien te pasó el enlace y volvé a entrar.</p><button type="button" class="btn pri" id="lOut">Salir</button></form>`);
+  $("#lOut").onclick=()=>sb.auth.signOut().then(()=>showLogin()); }
 function newHogar(){ loginBody(`<form id="lf3"><p class="msg">¡Bienvenido! Creá tu casa. Si otro dueño ya la creó, pedile que te invite con tu mail desde <b>Ajustes</b> y volvé a entrar.</p>
 <label class="fld"><span>Nombre de la casa</span><input class="inp" name="n" required maxlength="60" placeholder="Ej. Casa San Bernardino"></label>
 <label class="fld"><span>Tu nombre</span><input class="inp" name="yo" required maxlength="60" value="${esc(ls.get("casa.yo")||"")}"></label>
 <button class="btn pri" type="submit">Crear mi casa</button><button type="button" class="link" id="lOut">Salir</button></form>`);
   $("#lOut").onclick=()=>sb.auth.signOut().then(()=>showLogin());
   $("#lf3").addEventListener("submit",async e=>{ e.preventDefault(); const f=e.target; const {error}=await sb.rpc("casa_crear_hogar",{p_nombre:f.n.value.trim(),p_mi_nombre:f.yo.value.trim()});
-    if(error) return onErr(error); ls.set("casa.yo",f.yo.value.trim()); startSession(S.session); }); }
+    if(error) return /autoriz/i.test(error.message||"")?noAuth():onErr(error); ls.set("casa.yo",f.yo.value.trim()); startSession(S.session); }); }
 async function loadMiembros(){ const {data}=await sb.from("casa_miembros").select("*").eq("hogar_id",S.hogar.id); S.miembros=data||[]; const me=S.miembros.find(m=>m.user_id===S.uid); if(me&&me.nombre) S.myName=me.nombre; }
 async function loadAll(){
   const [a,h]=await Promise.all([sb.from("casa_items").select("id,tipo,datos").eq("hogar_id",S.hogar.id).neq("tipo","hist"),
@@ -1481,6 +1581,8 @@ function subscribe(){ if(S.ch) sb.removeChannel(S.ch);
 async function startSession(session){
   S.session=session; S.uid=session.user.id; S.myEmail=(session.user.email||"").toLowerCase();
   loginBody(`<p>Entrando…</p>`);
+  const est=await sb.rpc("casa_estado"); if(est.error&&!/function|schema|exist|not find/i.test(est.error.message||"")){ console.warn(est.error); return showLogin("No se pudo conectar. Revisá la conexión y volvé a intentar."); }
+  S.admin=!!(est.data&&est.data.admin); if(est.data&&!est.data.autorizado) return noAuth();
   const {data,error}=await sb.rpc("casa_entrar");
   if(error){ console.warn(error); return /function|schema|exist|not find/i.test(error.message||"")?noDb():showLogin("No se pudo conectar. Revisá la conexión y volvé a intentar."); }
   if(!data||!data.length) return newHogar();
@@ -1501,7 +1603,7 @@ async function boot(){
   if(window.supabase&&SUPA_URL) sb=window.supabase.createClient(SUPA_URL,SUPA_KEY,{auth:{storageKey:"casa.auth",persistSession:true}});
   const m=location.hash.match(/^#p=([0-9a-f]{16,64})$/); if(m) return staffView(m[1]);
   if("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(()=>{});
-  if(!sb||ls.get("casa.modo")==="local") return startLocal();
+  if(!sb) return startLocal();
   const {data}=await sb.auth.getSession(); if(data&&data.session) return startSession(data.session);
   showLogin();
 }
