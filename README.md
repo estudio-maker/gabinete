@@ -6,6 +6,7 @@ Funciona en la computadora y en el celular desde el mismo enlace.
 - **App:** `index.html` (se publica con GitHub Pages).
 - **Datos:** Supabase (proyecto "Gabinete Perez Ramirez Arquitectura", región São Paulo).
 - **Base de datos:** el esquema está en `supabase/01_esquema.sql`.
+- **Casa** (manejo del hogar: personal, tareas, compras, jardín y piscina): carpeta `casa/`, ver `casa/README.md`.
 
 Para entrar, cada persona abre el enlace, escribe su mail y recibe un código.
 Solo pueden entrar los mails que un administrador cargó en **Equipo → Gestionar equipo**.
