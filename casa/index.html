@@ -853,6 +853,7 @@ function waTasksText(p,d=TODAY()){
   const dl=d===TODAY()?"de hoy":"del "+longD(d);
   let s=`¡Hola ${first(p.nombre)}! Tus tareas ${dl}${d===TODAY()?" ("+longD(d)+")":""}:\n`;
   s+=xs.length?xs.map(x=>`• ${x.t.titulo}${x.t.hora?" ("+x.t.hora+")":""}${x.late?" — pendiente del "+fmtD(x.d):""}`).join("\n"):"• No hay tareas pendientes. ¡Gracias!";
+  const rs=remindersOn(d).filter(r=>r.resp===p.id&&!isDone(r,d)); if(rs.length) s+=`\n\nRecordatorios:\n`+rs.map(r=>`• ${r.titulo}${r.hora?" ("+r.hora+")":""}`).join("\n");
   if(live()&&p.token) s+=`\n\nCuando termines, marcalas acá: ${staffLink(p)}`;
   return s;
 }
@@ -933,7 +934,11 @@ ${byWho.length?byWho.map(g=>`<div class="bgroup"><h3>${g.p?avHTML(g.p):avHTML(nu
 ${lateRems.length||rems.length?`<div class="rlist">${lateRems.map(r=>remRow(r,r.fecha,true)).join("")}${rems.slice(0,6).map(x=>remRow(x.r,x.d)).join("")}</div>`:`<div class="col-empty">Nada en los próximos 7 días.</div>`}</section>`;
 };
 
+function remRowP(r,d,late,done){ const p=P(r.resp);
+  return `<div class="rrow ${done?"done":""}">${avHTML(p,"lg")}<div class="nm" data-act="openRem" data-id="${r.id}"><b>${esc(r.titulo)}</b><span>${late?`<span class="late-b">Vencido</span> `:""}${esc(relD(d))}${r.hora?" · "+esc(r.hora):""} · para ${esc(first(p.nombre))}</span></div>
+<button class="chk lg ${done?"on":""}" data-act="remDone" data-id="${r.id}" data-d="${d}" aria-label="Hecho">${ic("check")}</button></div>`; }
 function remRow(r,d,late){ const done=isDone(r,d);
+  if(P(r.resp)) return remRowP(r,d,late,done);
   return `<div class="rrow ${done?"done":""}"><span class="ri">${ic(r.cat==="Pago"?"money":r.cat==="Cumpleaños"?"sun":"bell")}</span><div class="nm" data-act="openRem" data-id="${r.id}"><b>${esc(r.titulo)}</b><span>${late?`<span class="late-b">Vencido</span> `:""}${esc(relD(d))}${d!==TODAY()&&dayDiff(d,TODAY())<7&&dayDiff(d,TODAY())>1?" "+fmtD(d):""}${r.hora?" · "+esc(r.hora):""}${r.cat?" · "+esc(r.cat):""}${repeats(r)?" · "+esc(repLabel(r)):""}</span></div>
 <button class="chk lg ${done?"on":""}" data-act="remDone" data-id="${r.id}" data-d="${d}" aria-label="Hecho">${ic("check")}</button></div>`; }
 
@@ -946,6 +951,7 @@ VIEWS.tareas=()=>{
     return tareas().filter(t=>(t.resp||"")===who).map(t=>({t,d:repeats(t)?(nextOcc(t)||t.fecha):hechaKey(t)})).sort((a,b)=>isDone(a.t,a.d)-isDone(b.t,b.d)||String(a.d).localeCompare(String(b.d)));
   };
   return `<div class="phead"><div class="nm"><div class="eyebrow">${S.tv==="hoy"?esc(longD(d)):S.tv==="sem"?"Próximos 7 días":"Todas las tareas"}</div><h1>Tablero de tareas</h1></div>
+${ps.some(p=>okTel(p.cel))?`<button class="btn wa-b" data-act="sendAll">${ic("chat")} Enviar a cada uno</button>`:""}
 <div class="seg" role="group" aria-label="Ver">${[["hoy","Hoy"],["sem","Semana"],["todas","Todas"]].map(([k,n])=>`<button data-act="tv" data-v="${k}" aria-pressed="${S.tv===k}">${n}</button>`).join("")}</div></div>
 ${!ps.length?`<div class="banner">${ic("team")}<span>Cargá a tu personal para tener una columna por persona.</span><span class="sp"></span><button class="btn sm" data-act="newPersona">Agregar personal</button></div>`:""}
 <div class="board">${cols.map(p=>{ const xs=colItems(p); const n=xs.filter(x=>!isDone(x.t,x.d)).length;
@@ -1298,16 +1304,23 @@ function remModal(id){
 <div class="g2"><label class="fld"><span>Fecha</span><input class="inp" type="date" name="fecha" required value="${esc(r.fecha)}"></label><label class="fld"><span>Hora</span><input class="inp" type="time" name="hora" value="${esc(r.hora||"")}"></label></div>
 <div class="g2"><label class="fld"><span>Repetir</span><select class="inp" name="rep">${Object.entries(REP_R).map(([k,n])=>`<option value="${k}" ${r.rep===k?"selected":""}>${n}</option>`).join("")}</select></label>
 <label class="fld"><span>Tipo</span><select class="inp" name="cat">${CATS.map(c=>`<option ${c===r.cat?"selected":""}>${c}</option>`).join("")}</select></label></div>
+<label class="fld"><span>Para</span><select class="inp" name="resp">${persOpts(r.resp,"Para mí / la casa")}</select><small class="muted">Si es para alguien del personal, lo ve en su enlace y lo agrega a su calendario para que le avise en el celular.</small></label>
 <label class="fld"><span>Notas</span><textarea class="inp" name="nota" rows="2" maxlength="600" placeholder="Número de cliente, a quién llamar…">${esc(r.nota||"")}</textarea></label>
-<div class="row"><button class="btn pri" type="submit">${id?"Guardar":"Crear"}</button>${id?`<button class="btn" type="button" id="rIcs">${ic("cal")} Agregar a mi calendario</button>`:""}<span class="sp"></span>${id?`<button class="btn danger ghost" type="button" id="rDel">${ic("trash")} Eliminar</button>`:""}</div></form>`,"narrow");
+<div class="row"><button class="btn pri" type="submit">${id?"Guardar":"Crear"}</button>${id?`<button class="btn" type="button" id="rIcs">${ic("cal")} Agregar a mi calendario</button>`:""}${id&&P(r.resp)&&okTel(P(r.resp).cel)?`<a class="btn wa-b" href="${esc(waHref(P(r.resp).cel,waRem(r)))}" target="_blank" rel="noopener">${ic("chat")} Avisar a ${esc(first(P(r.resp).nombre))}</a>`:""}<span class="sp"></span>${id?`<button class="btn danger ghost" type="button" id="rDel">${ic("trash")} Eliminar</button>`:""}</div></form>`,"narrow");
   const f=$("#fRem");
-  f.onsubmit=e=>{ e.preventDefault(); const o={...r,titulo:f.titulo.value.trim(),fecha:f.fecha.value,hora:f.hora.value,rep:f.rep.value,cat:f.cat.value,nota:f.nota.value.trim()}; if(!o.titulo||!o.fecha) return;
+  f.onsubmit=e=>{ e.preventDefault(); const o={...r,titulo:f.titulo.value.trim(),fecha:f.fecha.value,hora:f.hora.value,rep:f.rep.value,cat:f.cat.value,resp:f.resp.value,nota:f.nota.value.trim()}; if(!o.titulo||!o.fecha) return;
     if(o.rep==="sem") o.dias=[pYmd(o.fecha).getDay()];
-    if(!id){ o.id=rid(); o.tipo="recordatorio"; o.hechas={}; put(o); log(`creó el recordatorio «${o.titulo}»`,"new",o.id); closeModal(); toast("Recordatorio creado.",{label:"Agregar a mi calendario",fn:()=>downloadIcs(o)}); return; }
+    if(!id){ o.id=rid(); o.tipo="recordatorio"; o.hechas={}; put(o); const pp=P(o.resp); log(`creó el recordatorio «${o.titulo}»${pp?" para "+first(pp.nombre):""}`,"new",o.id); closeModal();
+      if(pp&&okTel(pp.cel)) toast(`Recordatorio creado para ${first(pp.nombre)}.`,{label:"Avisarle por WhatsApp",href:waHref(pp.cel,waRem(o))}); else toast("Recordatorio creado.",{label:"Agregar a mi calendario",fn:()=>downloadIcs(o)}); return; }
     put(o); closeModal(); };
   const ib=$("#rIcs"); if(ib) ib.onclick=()=>downloadIcs(r);
   const db=$("#rDel"); if(db) db.onclick=()=>confirmDel(db,()=>{ del(id); closeModal(); });
 }
+const waRem=r=>{ const p=P(r.resp); return `¡Hola ${p?first(p.nombre):""}! Te dejo un recordatorio: «${r.titulo}» ${r.rep&&r.rep!=="no"?"("+REP_R[r.rep].toLowerCase()+", desde el "+longD(r.fecha)+")":"para el "+longD(r.fecha)}${r.hora?" a las "+r.hora:""}.${r.nota?"\n"+r.nota:""}${live()&&p&&p.token?`\n\nEn tu enlace lo podés agregar a tu calendario para que te avise en el celular: ${staffLink(p)}`:""}`; };
+function sendAllModal(){ const d=TODAY(); const ps=personal().filter(p=>okTel(p.cel));
+  modal(`${mHead("Enviar las tareas a cada uno")}<div class="sheet-b"><p class="muted small" style="margin:0">Tocá cada persona: se abre WhatsApp con sus tareas de hoy${live()?" y su enlace para marcarlas":""}. Al volver, tocá la siguiente.</p>
+<div class="plist">${ps.map(p=>{ const n=instDay(d,p.id).filter(x=>!isDone(x.t,x.d)).length; const r=remindersOn(d).filter(x=>x.resp===p.id).length;
+  return `<a class="pick" href="${esc(waHref(p.cel,waTasksText(p)))}" target="_blank" rel="noopener" data-act="sentOne" data-id="${p.id}">${avHTML(p)}<span style="flex:1">${esc(p.nombre)}<br><span class="muted small">${n} tarea${n===1?"":"s"}${r?" · "+r+" recordatorio"+(r===1?"":"s"):""}${worksOn(p,d)?"":" · hoy no viene"}</span></span><span class="wa">${ic("chat")}</span></a>`; }).join("")}</div></div>`,"narrow"); }
 function downloadIcs(r){ const dt=r.fecha.replace(/-/g,""); const tm=r.hora?r.hora.replace(":","")+"00":"";
   const rr={sem:"FREQ=WEEKLY",mes:"FREQ=MONTHLY",anio:"FREQ=YEARLY"}[r.rep];
   const e=s=>String(s||"").replace(/[\\;,]/g,m=>"\\"+m).replace(/\n/g,"\\n");
@@ -1376,6 +1389,8 @@ const ACT={
     const cerrado=its.every(i=>i.ok); put({...x,items:its,cerrado,cerradoTs:cerrado?(x.cerradoTs||Date.now()):null});
     const c=S.items[it.id]; if(c&&c.tipo==="compra") put({...c,ok:it.ok}); pedidoModal(x.id); },
   invite:()=>inviteModal(),
+  sendAll:()=>sendAllModal(),
+  sentOne:el=>{ const p=P(el.dataset.id); if(p){ log(`le mandó por WhatsApp sus tareas a ${first(p.nombre)}`,"wa",p.id); el.style.opacity=".5"; } },
   copyInv:async el=>{ const p=S.items[el.dataset.id]; if(!p) return; try{ await navigator.clipboard.writeText(invLink(p)); toast("Enlace copiado."); }catch(e){ prompt("Enlace:",invLink(p)); } },
   pendDel:el=>{ const p=S.items[el.dataset.id]; if(p) del(p.id); },
   newAus:el=>ausModal(null,{persona:el.dataset.id||"",desde:el.dataset.d||(S.view==="cal"?S.cal.sel:TODAY())}),
@@ -1507,17 +1522,25 @@ async function staffView(token){
         toast("¡Listo, ya estás en el personal de la casa!"); draw(); };
       return; }
     const ts=data.tareas||[]; const d=TODAY(); S.items={}; ts.forEach(t=>S.items[t.id]={...t,tipo:"tarea"});
-    const peds=data.pedidos||[];
+    const peds=data.pedidos||[]; const rems=(data.recordatorios||[]).map(r=>({...r,tipo:"recordatorio"}));
+    const proxR=[]; for(let i=0;i<14;i++){ const dd=addD(d,i); rems.forEach(r=>{ if(occurs(r,dd)&&!isDone(r,dd)) proxR.push({r,d:dd}); }); }
+    S.staffRems=rems;
     const hoy=instDay(d,data.persona.id); const prox=[]; for(let i=1;i<7;i++){ const dd=addD(d,i); tareas().filter(t=>occurs(t,dd)).forEach(t=>prox.push({t,d:dd})); }
     const sc=x=>{ const done=isDone(x.t,x.d); return `<div class="card ${done?"done":""}"><div class="ttl">${x.d==="x"||x.d<=d?`<button class="chk lg ${done?"on":""}" data-sid="${x.t.id}" data-sd="${x.d}" aria-label="Marcar">${ic("check")}</button>`:""}<span class="t" style="font-size:15px">${esc(x.t.titulo)}</span></div>
 <div class="meta">${x.late?`<span class="late-b">Pendiente del ${fmtD(x.d)}</span>`:""}${x.d!=="x"&&x.d!==d?`<span class="due">${ic("cal")}${esc(relD(x.d))}</span>`:""}${x.t.hora?`<span class="due">${ic("clock")}${esc(x.t.hora)}</span>`:""}</div>${x.t.nota?`<div class="small muted">${esc(x.t.nota)}</div>`:""}</div>`; };
     $("#view").innerHTML=`<div class="staff"><div class="hello"><div><div class="eyebrow">${esc(longD(d))}</div><h1>¡Hola, ${esc(first(data.persona.nombre))}!</h1></div></div>
 <p class="muted" style="margin:0">Tocá el círculo cuando termines cada tarea${peds.length?" y «Comprado» en cada cosa de las compras":""}. Le avisa a la casa al instante.</p>
 <section class="hfsec"><h2>Hoy</h2>${hoy.length?hoy.map(sc).join(""):`<div class="col-empty">No tenés tareas para hoy.</div>`}</section>
+${proxR.length?`<section class="hfsec"><h2>${ic("bell")} Recordatorios</h2>
+${"Notification" in window&&Notification.permission!=="granted"?`<button class="btn" id="stNotif">${ic("bell")} Activar avisos en este celular</button>`:""}
+<div class="rlist">${proxR.slice(0,10).map(x=>`<div class="rrow"><span class="ri">${ic("bell")}</span><div class="nm"><b>${esc(x.r.titulo)}</b><span>${esc(relD(x.d))}${x.r.hora?" · "+esc(x.r.hora):""}${x.r.nota?" · "+esc(x.r.nota):""}</span></div><button class="btn sm" data-ics="${x.r.id}">${ic("cal")} A mi calendario</button></div>`).join("")}</div>
+<p class="small muted" style="margin:0">«A mi calendario» lo guarda en el calendario de tu celular y te avisa a la hora, aunque no tengas esta página abierta.</p></section>`:""}
 ${peds.map(x=>{ const its=x.items||[], n=its.filter(i=>i.ok).length; return `<section class="hfsec"><h2>${ic("cart")} Compras: ${esc(x.nombre||"")} <span class="muted small">${n} de ${its.length}</span></h2>
 <div class="shop">${its.map(i=>`<div class="it ${i.ok?"ok":""}"><span class="t">${esc(i.txt)}</span>${i.cant?`<span class="q">${esc(i.cant)}</span>`:""}<button class="btn sm ${i.ok?"":"pri"}" data-pid="${x.id}" data-iid="${esc(i.id)}" data-on="${i.ok?0:1}">${i.ok?"Desmarcar":ic("check")+" Comprado"}</button></div>`).join("")}</div>
 ${x.cerrado?`<p class="small" style="margin:0;color:var(--ok)">¡Compraste todo! Ya le avisó a la casa.</p>`:""}</section>`; }).join("")}
 ${prox.length?`<section class="hfsec"><h2>Próximos días</h2>${prox.map(x=>sc(x)).join("")}</section>`:""}</div>`;
+    $$("[data-ics]").forEach(b=>b.onclick=()=>{ const r=rems.find(x=>x.id===b.dataset.ics); if(r) downloadIcs(r); });
+    const sn=$("#stNotif"); if(sn) sn.onclick=async()=>{ const r=await Notification.requestPermission(); toast(r==="granted"?"Listo: te avisa mientras tengas la página abierta o instalada.":"El celular bloqueó los avisos."); draw(); };
     $$("[data-pid]").forEach(b=>b.onclick=async()=>{ b.disabled=true; const on=b.dataset.on==="1";
       const {data:ok,error:er}=await sb.rpc("casa_personal_comprar",{p_token:token,p_pedido:b.dataset.pid,p_item:b.dataset.iid,p_hecho:on});
       if(er||!ok){ b.disabled=false; toast("No se pudo guardar. Revisá internet y volvé a tocar."); return; }
@@ -1528,6 +1551,9 @@ ${prox.length?`<section class="hfsec"><h2>Próximos días</h2>${prox.map(x=>sc(x
       toast(on?"¡Gracias! Quedó marcada.":"Desmarcada."); draw(); });
   };
   await draw(); document.addEventListener("visibilitychange",()=>{ if(!document.hidden) draw(); });
+  setInterval(()=>{ const d=TODAY(), t=hm(Date.now()); let seen={}; try{ seen=JSON.parse(ls.get("casa.avisados")||"{}"); }catch(e){}
+    (S.staffRems||[]).filter(r=>r.hora&&occurs(r,d)&&r.hora<=t&&!isDone(r,d)&&!seen[r.id+d]).forEach(r=>{ seen[r.id+d]=1; try{ if("Notification" in window&&Notification.permission==="granted") new Notification(r.titulo,{body:"Recordatorio · "+r.hora,icon:"icon-192.png",tag:r.id+d}); }catch(e){} toast("Recordatorio: "+r.titulo); });
+    ls.set("casa.avisados",JSON.stringify(seen)); },30000);
 }
 
 /* ---------- entrar ---------- */

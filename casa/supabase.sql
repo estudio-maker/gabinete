@@ -120,6 +120,8 @@ begin
     'casa', h.nombre,
     'tareas', coalesce((select jsonb_agg(datos||jsonb_build_object('id',id)) from casa_items
        where hogar_id=p.hogar_id and tipo='tarea' and datos->>'resp'=p.id::text and not coalesce((datos->>'archivada')::boolean,false)),'[]'::jsonb),
+    'recordatorios', coalesce((select jsonb_agg(datos||jsonb_build_object('id',id)) from casa_items
+       where hogar_id=p.hogar_id and tipo='recordatorio' and datos->>'resp'=p.id::text),'[]'::jsonb),
     'pedidos', coalesce((select jsonb_agg(datos||jsonb_build_object('id',id) order by (datos->>'ts')::bigint desc) from casa_items
        where hogar_id=p.hogar_id and tipo='pedido' and datos->>'persona'=p.id::text
          and (not coalesce((datos->>'cerrado')::boolean,false) or (datos->>'cerradoTs')::bigint>(extract(epoch from now())*1000)::bigint-86400000)),'[]'::jsonb));
