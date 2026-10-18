@@ -146,6 +146,11 @@ grant execute on function casa_personal_ver(text) to anon, authenticated;
 grant execute on function casa_personal_marcar(text,uuid,text,boolean) to anon, authenticated;
 grant execute on function casa_entrar() to authenticated;
 grant execute on function casa_crear_hogar(text,text) to authenticated;
+-- Las tablas nuevas no quedan habilitadas solas en este proyecto: se dan a los dueños que entran con su mail.
+grant select, insert, update, delete on public.casa_items, public.casa_invitaciones to authenticated;
+grant select, update, delete on public.casa_miembros to authenticated;
+grant select, update on public.casa_hogares to authenticated;
+grant execute on function public.casa_es_miembro(uuid) to authenticated;
 
 -- Cambios en vivo entre los dueños
 do $$ begin
