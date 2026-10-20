@@ -29,7 +29,7 @@ control del jardinero y el piscinero, y las listas de compras. Misma base y dise
    sus tareas y las marca como hechas, sin cuenta ni mail. Desde ese enlace también anota lo que falta comprar
    y marca si vino el jardinero o el piscinero.
 
-Para activar la opción con cuenta hay que correr una vez `casa/supabase.sql` (si ya se había corrido una versión anterior, correr también `casa/supabase_02_permisos.sql` `casa/supabase_03_personal_y_compras.sql` `casa/supabase_04_acceso.sql` y `casa/supabase_05_personal_carga.sql`) en el SQL Editor de Supabase.
+Para activar la opción con cuenta hay que correr una vez `casa/supabase.sql` (si ya se había corrido una versión anterior, correr también `casa/supabase_02_permisos.sql` `casa/supabase_03_personal_y_compras.sql` `casa/supabase_04_acceso.sql`, `casa/supabase_05_personal_carga.sql` y `casa/supabase_06_cantidad_unidad.sql`) en el SQL Editor de Supabase.
 Usa el mismo proyecto de Gabinete: todas las tablas empiezan con `casa_` y no tocan nada de Gabinete.
 La plantilla del mail de acceso tiene que mandar el código (`{{ .Token }}`), igual que en Gabinete.
 
