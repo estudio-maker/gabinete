@@ -26,9 +26,10 @@ control del jardinero y el piscinero, y las listas de compras. Misma base y dise
 1. **Sin cuenta**: todo queda guardado en ese celular. Sirve para probarla ya (hay datos de ejemplo en Ajustes).
 2. **Con cuenta** (los dueños entran con su mail y un código, como en Gabinete): los datos se comparten
    entre los dueños de la casa y cada persona del personal recibe un **enlace propio** por WhatsApp donde ve
-   sus tareas y las marca como hechas, sin cuenta ni mail.
+   sus tareas y las marca como hechas, sin cuenta ni mail. Desde ese enlace también anota lo que falta comprar
+   y marca si vino el jardinero o el piscinero.
 
-Para activar la opción con cuenta hay que correr una vez `casa/supabase.sql` (si ya se había corrido una versión anterior, correr también `casa/supabase_02_permisos.sql` `casa/supabase_03_personal_y_compras.sql` y `casa/supabase_04_acceso.sql`) en el SQL Editor de Supabase.
+Para activar la opción con cuenta hay que correr una vez `casa/supabase.sql` (si ya se había corrido una versión anterior, correr también `casa/supabase_02_permisos.sql` `casa/supabase_03_personal_y_compras.sql` `casa/supabase_04_acceso.sql`, `casa/supabase_05_personal_carga.sql` y `casa/supabase_06_cantidad_unidad.sql`) en el SQL Editor de Supabase.
 Usa el mismo proyecto de Gabinete: todas las tablas empiezan con `casa_` y no tocan nada de Gabinete.
 La plantilla del mail de acceso tiene que mandar el código (`{{ .Token }}`), igual que en Gabinete.
 
