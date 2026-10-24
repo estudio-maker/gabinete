@@ -169,7 +169,7 @@ textarea.inp{resize:vertical;line-height:1.45}
 .quick>button{all:unset;box-sizing:border-box;cursor:pointer;display:flex;gap:6px;align-items:center;width:100%;padding:7px 8px;border-radius:6px;color:var(--ink2);font-size:13px}
 .quick>button:hover{background:var(--line2);color:var(--ink)}
 
-.card{background:var(--sheet);border:1px solid var(--line);border-radius:8px;padding:10px 11px 9px;display:grid;gap:7px;cursor:grab;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;box-shadow:var(--shadow);min-width:0;transition:border-color .12s}
+.card{background:var(--sheet);border:1px solid var(--line);border-radius:8px;padding:10px 11px 9px;display:grid;grid-template-columns:minmax(0,1fr);gap:7px;cursor:grab;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;box-shadow:var(--shadow);min-width:0;transition:border-color .12s}
 .card:hover{border-color:var(--ink3)}
 .card.dragging{opacity:.28}
 .card .meta{display:flex;gap:6px 8px;flex-wrap:wrap;align-items:center;min-width:0}
@@ -182,7 +182,9 @@ textarea.inp{resize:vertical;line-height:1.45}
 .chk.lg{width:24px;height:24px}
 .chk.lg .ic{width:15px;height:15px}
 .card.done .t{color:var(--ink3);text-decoration:line-through;text-decoration-color:var(--ink3)}
-.foot{display:flex;align-items:center;gap:7px;font-size:11.5px;color:var(--ink2);min-height:22px}
+.foot{display:flex;flex-wrap:wrap;align-items:center;gap:6px 7px;font-size:11.5px;color:var(--ink2);min-height:22px;min-width:0}
+.foot>.sp{flex:1 0 0}
+.foot>.who-tag{margin-left:auto;max-width:100%}
 .due{font-family:var(--f-mono);font-size:11px;display:inline-flex;gap:4px;align-items:center;padding:1px 6px;border-radius:4px;background:var(--line2);white-space:nowrap}
 .due .ic{width:12px;height:12px}
 .due.over{background:var(--badbg);color:var(--bad)} .due.today{background:var(--tapebg);color:var(--warn)}
@@ -550,9 +552,11 @@ const APP_URL=location.origin+location.pathname.replace(/index\.html$/,"");
 const taskLink=id=>APP_URL+"#tarea-"+id;
 const okMail=v=>/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(v||"").trim());
 const ICON="apple-touch-icon.png";
-const APP_VERSION="2026-10-16.2";
+const APP_VERSION="2026-10-24.1";
 /* Novedades: la más nueva primero. Se muestran solas al entrar a una versión nueva. */
 const CHANGELOG=[
+ {v:"2026-10-24.1",d:"2026-10-24",items:[
+  ["boards","Las <b>tarjetas de tareas</b> ya no se salen del tablero: los títulos largos y la fila de fecha, prioridad y responsables pasan a la línea de abajo dentro de la tarjeta."]]},
  {v:"2026-10-16.2",d:"2026-10-16",items:[
   ["chat","<b>Recordar por WhatsApp</b> ahora también muestra a los proveedores, contratistas y clientes anotados en «Pedido a» que tengan celular."]]},
  {v:"2026-10-16.1",d:"2026-10-16",items:[
