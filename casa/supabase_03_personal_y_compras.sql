@@ -41,7 +41,7 @@ begin
   update casa_items set datos=datos||jsonb_build_object('nombre',n,'cel',c,'pendiente',false,'u',(extract(epoch from now())*1000)::bigint) where id=p.id;
   insert into casa_items(id,hogar_id,tipo,datos) values (gen_random_uuid(),p.hogar_id,'hist',jsonb_build_object(
     'ts',(extract(epoch from now())*1000)::bigint,'k','new','ref',p.id,'quien',n,
-    'txt','se sumó al personal con el enlace de WhatsApp ('||coalesce(p.datos->>'rol','')||')'));
+    'txt','se sumó al personal con el enlace de WhatsApp'));
   return true;
 end $$;
 
