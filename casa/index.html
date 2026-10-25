@@ -537,6 +537,19 @@ a.btn.pri,a.btn.wa-b{color:#fff}
 .chips{display:flex;gap:6px;flex-wrap:wrap}
 .chips button{all:unset;cursor:pointer;padding:5px 10px;border-radius:99px;border:1px solid var(--line);font-size:12.5px;background:var(--sheet)}
 .chips button[aria-pressed="true"]{background:var(--accentbg);border-color:var(--accent);color:var(--accent);font-weight:600}
+.fotos{display:flex;gap:8px;flex-wrap:wrap}
+.fotos:empty{display:none}
+.foto{position:relative;width:76px;height:76px;border-radius:8px;overflow:hidden;border:1px solid var(--line);background:var(--line2);flex:none}
+.foto img{width:100%;height:100%;object-fit:cover;display:block;cursor:zoom-in}
+.foto .fx{all:unset;position:absolute;top:3px;right:3px;width:22px;height:22px;border-radius:99px;background:rgba(0,0,0,.6);color:#fff;display:grid;place-items:center;cursor:pointer}
+.foto .fx .ic{width:14px;height:14px}
+.fadd{justify-self:start;cursor:pointer}
+.fadd.dis{opacity:.6;pointer-events:none}
+.staff .fotos{margin-top:8px}
+.visor{position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.92);display:grid;place-items:center;padding:16px}
+.visor img{max-width:100%;max-height:100%;object-fit:contain;border-radius:6px}
+.visor .vx{all:unset;position:absolute;top:14px;right:14px;width:40px;height:40px;border-radius:99px;background:rgba(255,255,255,.15);color:#fff;display:grid;place-items:center;cursor:pointer}
+.visor .vn{position:absolute;bottom:18px;left:0;right:0;text-align:center;color:#fff;font-size:13px}
 .reptag{display:inline-flex;align-items:center;gap:3px;font-size:11px;color:var(--ink2);font-family:var(--f-mono)}
 .reptag .ic{width:12px;height:12px}
 .late-b{font-size:10.5px;font-weight:700;color:var(--bad);background:var(--badbg);padding:0 6px;border-radius:4px;font-family:var(--f-display);font-stretch:82%;letter-spacing:.06em;text-transform:uppercase}
@@ -711,6 +724,7 @@ const gs=n=>new Intl.NumberFormat("es-PY").format(Math.round(+n||0));
 const NC=8;
 
 const I={
+cam:'<path d="M4 8h3l2-3h6l2 3h3a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><circle cx="12" cy="13.5" r="3.5"/>',
 home:'<path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/>',
 boards:'<rect x="3" y="4" width="5" height="16" rx="1.2"/><rect x="10" y="4" width="5" height="10" rx="1.2"/><rect x="17" y="4" width="4" height="13" rx="1.2"/>',
 team:'<circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><circle cx="17" cy="9" r="2.5"/><path d="M16.5 14.2c2.6.3 4.5 2.6 4.5 5.8"/>',
@@ -915,7 +929,7 @@ const card=(x,opt={})=>{ const t=x.t, done=isDone(t,x.d), p=P(t.resp);
 <div class="ttl"><button class="chk ${done?"on":""}" data-act="done" data-id="${t.id}" data-d="${x.d}" aria-label="${done?"Desmarcar":"Marcar como hecha"}">${ic("check")}</button><span class="t">${esc(t.titulo)}</span></div>
 <div class="meta">${opt.who&&p?`<span class="chip">${avHTML(p)}<span class="cn">${esc(first(p.nombre))}</span></span>`:""}${opt.who&&!p?`<span class="chip">${avHTML(null)}<span class="cn dim">Sin asignar</span></span>`:""}
 ${x.late?`<span class="late-b">Atrasada · ${fmtD(x.d)}</span>`:""}${opt.day&&x.d!=="x"?`<span class="due ${x.d===TODAY()?"today":""}">${ic("cal")}${esc(relD(x.d))}</span>`:""}${t.hora?`<span class="due">${ic("clock")}${esc(t.hora)}</span>`:""}
-${repeats(t)?`<span class="reptag">${ic("rep")}${esc(repLabel(t))}</span>`:""}${done&&t.hechas[x.d].por&&t.hechas[x.d].por!==S.myName?`<span class="reptag">${ic("check")}${esc(first(t.hechas[x.d].por))}</span>`:""}</div></div>`; };
+${repeats(t)?`<span class="reptag">${ic("rep")}${esc(repLabel(t))}</span>`:""}${(t.fotos||[]).length?`<span class="reptag">${ic("cam")}${t.fotos.length}</span>`:""}${done&&t.hechas[x.d].por&&t.hechas[x.d].por!==S.myName?`<span class="reptag">${ic("check")}${esc(first(t.hechas[x.d].por))}</span>`:""}</div></div>`; };
 
 VIEWS.home=()=>{
   const d=TODAY(), inst=instDay(d), pend=inst.filter(x=>!isDone(x.t,x.d)), late=inst.filter(x=>x.late);
@@ -1164,6 +1178,28 @@ async function loadAut(){ const el=$("#autList"); if(!el) return; const {data,er
 function loadLocalCount(){ try{ const j=JSON.parse(ls.get(LOCAL_KEY)||"null"); return j&&j.items?Object.values(j.items).filter(x=>x.tipo!=="hist").length:0; }catch(e){ return 0; } }
 
 /* ---------- modales ---------- */
+/* ---------- fotos de las tareas: se achican en el celular y se guardan dentro de la tarea ---------- */
+const FOTO_MAX=4, FOTO_LADO=1100, FOTO_TOTAL=650000;
+function achicarFoto(file,lado=FOTO_LADO,q=.62){ return new Promise((ok,mal)=>{ const u=URL.createObjectURL(file), im=new Image();
+  im.onload=()=>{ const k=Math.min(1,lado/Math.max(im.width,im.height)), c=document.createElement("canvas"); c.width=Math.round(im.width*k); c.height=Math.round(im.height*k);
+    c.getContext("2d").drawImage(im,0,0,c.width,c.height); URL.revokeObjectURL(u); ok(c.toDataURL("image/jpeg",q)); };
+  im.onerror=()=>{ URL.revokeObjectURL(u); mal(new Error("foto")); }; im.src=u; }); }
+async function achicarDataUrl(d,lado,q){ const b=await (await fetch(d)).blob(); return achicarFoto(b,lado,q); }
+const fotosHTML=(fs,edit)=>(fs||[]).map((f,i)=>`<span class="foto"><img src="${esc(f)}" alt="Foto ${i+1}" data-ver="${i}">${edit?`<button type="button" class="fx" data-quitar="${i}" aria-label="Quitar foto">${ic("x")}</button>`:""}</span>`).join("");
+function verFoto(fs,i){ const v=document.createElement("div"); v.className="visor"; v.setAttribute("role","dialog");
+  const pintar=()=>{ v.innerHTML=`<img src="${esc(fs[i])}" alt="Foto ${i+1} de ${fs.length}"><button class="vx" aria-label="Cerrar">${ic("x")}</button>${fs.length>1?`<span class="vn">${i+1} / ${fs.length}</span>`:""}`; };
+  pintar(); v.onclick=e=>{ if(fs.length>1&&e.target.tagName==="IMG"){ i=(i+1)%fs.length; pintar(); } else v.remove(); }; document.body.appendChild(v); }
+function wireFotos(box,fs){ const inp=box.querySelector("input[type=file]"), lst=box.querySelector(".fotos"), add=box.querySelector(".fadd");
+  const pintar=()=>{ lst.innerHTML=fotosHTML(fs,true); add.hidden=fs.length>=FOTO_MAX; };
+  lst.onclick=e=>{ const q=e.target.closest("[data-quitar]"); if(q){ fs.splice(+q.dataset.quitar,1); pintar(); return; } const v=e.target.closest("[data-ver]"); if(v) verFoto(fs,+v.dataset.ver); };
+  inp.onchange=async()=>{ const files=[...inp.files].slice(0,FOTO_MAX-fs.length); inp.value=""; if(!files.length) return;
+    add.classList.add("dis"); add.querySelector("span").textContent=" Cargando…";
+    for(const f of files){ try{ fs.push(await achicarFoto(f)); }catch(e){ toast("No se pudo leer una de las fotos."); } }
+    let tot=fs.reduce((a,f)=>a+f.length,0);
+    for(let lado=900;tot>FOTO_TOTAL&&lado>=500;lado-=200){ for(let i=0;i<fs.length;i++) fs[i]=await achicarDataUrl(fs[i],lado,.55); tot=fs.reduce((a,f)=>a+f.length,0); }
+    add.classList.remove("dis"); add.querySelector("span").textContent=" Agregar foto"; pintar(); };
+  pintar(); }
+
 function modal(html,cls=""){ $("#layer").innerHTML=`<div class="scrim" data-act="scrim"><div class="sheet ${cls}" role="dialog" aria-modal="true">${html}</div></div>`; const f=$("#layer [autofocus]"); if(f) setTimeout(()=>f.focus(),30); }
 function closeModal(){ $("#layer").innerHTML=""; render(); }
 const mHead=t=>`<div class="sheet-h"><h2 style="flex:1">${t}</h2><button class="icon-btn" data-act="close" aria-label="Cerrar">${ic("x")}</button></div>`;
@@ -1184,15 +1220,16 @@ function taskModal(id,pre={}){
 <label class="fld"><span>Repetir</span><select class="inp" name="rep">${Object.entries(REP_T).map(([k,n])=>`<option value="${k}" ${t.rep===k?"selected":""}>${n}</option>`).join("")}</select></label>
 <div class="fld" id="repDias" ${t.rep==="sem"?"":"hidden"}><span>Qué días</span>${daysPick(t.dias&&t.dias.length?t.dias:(t.fecha?[pYmd(t.fecha).getDay()]:[]))}</div>
 <label class="fld"><span>Notas</span><textarea class="inp" name="nota" rows="2" maxlength="600" placeholder="Detalles, productos, dónde está todo…">${esc(t.nota||"")}</textarea></label>
+<div class="fld" id="tFotos"><span>Fotos (opcional)</span><div class="fotos"></div><label class="btn fadd">${ic("cam")}<span> Agregar foto</span><input type="file" accept="image/*" multiple hidden></label><small class="muted">Hasta ${FOTO_MAX} fotos. Sacala en el momento o elegila de la galería.</small></div>
 <div class="row"><button class="btn pri" type="submit">${id?"Guardar":"Crear tarea"}</button>
 ${id&&p&&okTel(p.cel)?`<a class="btn wa-b" href="${esc(waHref(p.cel,waOneTask(t)))}" target="_blank" rel="noopener">${ic("chat")} Enviar a ${esc(first(p.nombre))}</a>`:""}
 <span class="sp"></span>${id?`<button class="btn danger ghost" type="button" id="tDel">${ic("trash")} Eliminar</button>`:""}</div>
 ${id&&Object.keys(t.hechas||{}).length?`<div class="acts"><div class="eyebrow">Últimas veces hecha</div>${Object.entries(t.hechas).sort((a,b)=>b[1].ts-a[1].ts).slice(0,5).map(([d,h])=>`<div><span class="tm">${d==="x"?"":esc(fmtD(d))}</span><span>${esc(h.por||"")} · ${hm(h.ts)}</span></div>`).join("")}</div>`:""}
 </form>`);
-  wireSheet(); const f=$("#fTask");
+  wireSheet(); const f=$("#fTask"); const fotos=[...(t.fotos||[])]; wireFotos($("#tFotos"),fotos);
   f.rep.onchange=()=>{ $("#repDias").hidden=f.rep.value!=="sem"; if(f.rep.value!=="no"&&!f.fecha.value) f.fecha.value=TODAY(); };
-  f.onsubmit=e=>{ e.preventDefault(); const o={...t,titulo:f.titulo.value.trim(),resp:f.resp.value,fecha:f.fecha.value,hora:f.fecha.value?f.hora.value:"",rep:f.rep.value,nota:f.nota.value.trim()};
-    if(!o.titulo) return; if(o.rep!=="no"&&!o.fecha) o.fecha=TODAY();
+  f.onsubmit=e=>{ e.preventDefault(); const o={...t,titulo:f.titulo.value.trim(),resp:f.resp.value,fecha:f.fecha.value,hora:f.fecha.value?f.hora.value:"",rep:f.rep.value,nota:f.nota.value.trim(),fotos:[...fotos]};
+    if(!o.titulo) return; if(!o.fotos.length) delete o.fotos; if(o.rep!=="no"&&!o.fecha) o.fecha=TODAY();
     o.dias=o.rep==="sem"?readDays(f):[]; if(o.rep==="sem"&&!o.dias.length) o.dias=[pYmd(o.fecha).getDay()];
     if(!id){ o.id=rid(); o.tipo="tarea"; o.creada=Date.now(); o.hechas={}; put(o); const pp=P(o.resp); log(`creó «${o.titulo}»${pp?" para "+first(pp.nombre):""}`,"new",o.id);
       closeModal(); if(pp&&okTel(pp.cel)) toast(`Tarea creada para ${first(pp.nombre)}.`,{label:"Enviar por WhatsApp",href:waHref(pp.cel,waOneTask(o))}); else toast("Tarea creada."); return; }
@@ -1549,7 +1586,7 @@ async function staffView(token){
     const dOpts=[0,1,2,3].map(i=>{ const dd=addD(d,-i); return `<option value="${dd}">${i===0?"Hoy":i===1?"Ayer":esc(relD(dd))}</option>`; }).join("");
     const hoy=instDay(d,data.persona.id); const prox=[]; for(let i=1;i<7;i++){ const dd=addD(d,i); tareas().filter(t=>occurs(t,dd)).forEach(t=>prox.push({t,d:dd})); }
     const sc=x=>{ const done=isDone(x.t,x.d); return `<div class="card ${done?"done":""}"><div class="ttl">${x.d==="x"||x.d<=d?`<button class="chk lg ${done?"on":""}" data-sid="${x.t.id}" data-sd="${x.d}" aria-label="Marcar">${ic("check")}</button>`:""}<span class="t" style="font-size:15px">${esc(x.t.titulo)}</span></div>
-<div class="meta">${x.late?`<span class="late-b">Pendiente del ${fmtD(x.d)}</span>`:""}${x.d!=="x"&&x.d!==d?`<span class="due">${ic("cal")}${esc(relD(x.d))}</span>`:""}${x.t.hora?`<span class="due">${ic("clock")}${esc(x.t.hora)}</span>`:""}</div>${x.t.nota?`<div class="small muted">${esc(x.t.nota)}</div>`:""}</div>`; };
+<div class="meta">${x.late?`<span class="late-b">Pendiente del ${fmtD(x.d)}</span>`:""}${x.d!=="x"&&x.d!==d?`<span class="due">${ic("cal")}${esc(relD(x.d))}</span>`:""}${x.t.hora?`<span class="due">${ic("clock")}${esc(x.t.hora)}</span>`:""}</div>${x.t.nota?`<div class="small muted">${esc(x.t.nota)}</div>`:""}${(x.t.fotos||[]).length?`<div class="fotos" data-fotos="${x.t.id}">${fotosHTML(x.t.fotos)}</div>`:""}</div>`; };
     $("#view").innerHTML=`<div class="staff"><div class="hello"><div><div class="eyebrow">${esc(longD(d))}</div><h1>¡Hola, ${esc(first(data.persona.nombre))}!</h1></div></div>
 <p class="muted" style="margin:0">Tocá el círculo cuando termines cada tarea${peds.length?" y «Comprado» en cada cosa de las compras":""}. Más abajo podés anotar lo que falta comprar y marcar si vino el jardinero o el piscinero. Todo le avisa a la casa al instante.</p>
 <section class="hfsec"><h2>Hoy</h2>${hoy.length?hoy.map(sc).join(""):`<div class="col-empty">No tenés tareas para hoy.</div>`}</section>
@@ -1573,6 +1610,7 @@ ${(lis.length?lis:[{id:null,nombre:""}]).map(l=>{ const xs=comp.filter(c=>!l.id|
 <button class="btn pri" type="submit">${ic("check")} Marcar que vino</button>
 ${vis.length?`<div class="rlist">${vis.map(v=>`<div class="rrow"><span class="ri">${ic(SVC[v.servicio]?SVC[v.servicio].ic:"check")}</span><div class="nm"><b>${esc(SVC[v.servicio]?SVC[v.servicio].rol:"Visita")}</b><span>${esc(relD(v.fecha))}${v.llegada?" · "+esc(v.llegada):""}${v.por?" · marcó "+esc(first(v.por)):""}</span></div></div>`).join("")}</div>`:""}</form></section>
 ${prox.length?`<section class="hfsec"><h2>Próximos días</h2>${prox.map(x=>sc(x)).join("")}</section>`:""}</div>`;
+    $$("[data-fotos]").forEach(el=>el.onclick=e=>{ const v=e.target.closest("[data-ver]"); const t=S.items[el.dataset.fotos]; if(v&&t) verFoto(t.fotos,+v.dataset.ver); });
     $$("[data-ics]").forEach(b=>b.onclick=()=>{ const r=rems.find(x=>x.id===b.dataset.ics); if(r) downloadIcs(r); });
     const sn=$("#stNotif"); if(sn) sn.onclick=async()=>{ const r=await Notification.requestPermission(); toast(r==="granted"?"Listo: te avisa mientras tengas la página abierta o instalada.":"El celular bloqueó los avisos."); draw(); };
     $("#stAdd").onsubmit=async e=>{ e.preventDefault(); const f=e.target, b=f.querySelector("button"); const txt=f.txt.value.trim(); if(!txt) return;
