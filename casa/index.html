@@ -761,7 +761,6 @@ chart:'<path d="M4 20V4M4 20h16"/><rect x="7" y="12" width="3" height="5" rx=".6
 };
 const ic=(k,c="")=>`<svg class="ic ${c}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${I[k]||""}</svg>`;
 
-const ROLES=["Empleada doméstica","Niñera","Cocinera","Chofer","Jardinero","Piscinero","Seguridad","Mantenimiento","Otro"];
 const REP_T={no:"No se repite",dia:"Todos los días",sem:"Cada semana",mes:"Cada mes"};
 const REP_R={no:"No se repite",sem:"Cada semana",mes:"Cada mes",anio:"Cada año"};
 const CATS=["Pago","Mantenimiento","Salud","Cumpleaños","Vehículo","Colegio","Otro"];
@@ -953,7 +952,7 @@ ${missed.length?`<div class="hfsec">${missed.map(m=>`<div class="alert">${ic("wa
 <section class="hfsec"><div class="sec-h"><h2>Hoy en casa</h2><span class="sp"></span><button class="btn ghost sm" data-act="go" data-v="resumen">${ic("chart")} Resumen del mes</button></div>
 ${faltan.map(p=>{ const a=ausenteOn(p.id,d); return `<div class="alert warn">${ic("user")}<span><b>${esc(p.nombre)}</b> no viene hoy: ${esc(a.motivo||"ausencia")}${a.hasta&&a.hasta!==a.desde?" (hasta el "+esc(fmtD(a.hasta))+")":""}.</span><span class="sp"></span><button class="btn sm" data-act="editAus" data-id="${a.id}">Ver</button></div>`; }).join("")}
 ${vienen.length||svcHoy.length?`<div class="hflist">${vienen.map(p=>{ const n=instDay(d,p.id).filter(x=>!isDone(x.t,x.d)).length;
-  return `<div class="prow">${avHTML(p,"lg")}<div class="nm"><b>${esc(p.nombre)}</b><span>${esc(p.rol||"")}${p.entrada?" · "+esc(p.entrada)+(p.salida?"–"+esc(p.salida):""):""} · ${n} tarea${n===1?"":"s"}</span></div>${okTel(p.cel)?`<a class="icon-btn wa" href="${esc(waHref(p.cel,waTasksText(p)))}" target="_blank" rel="noopener" aria-label="Mandar tareas por WhatsApp" data-act="waLog" data-id="${p.id}">${ic("chat")}</a>`:""}</div>`; }).join("")}
+  return `<div class="prow">${avHTML(p,"lg")}<div class="nm"><b>${esc(p.nombre)}</b><span>${p.entrada?esc(p.entrada)+(p.salida?"–"+esc(p.salida):"")+" · ":""}${n} tarea${n===1?"":"s"}</span></div>${okTel(p.cel)?`<a class="icon-btn wa" href="${esc(waHref(p.cel,waTasksText(p)))}" target="_blank" rel="noopener" aria-label="Mandar tareas por WhatsApp" data-act="waLog" data-id="${p.id}">${ic("chat")}</a>`:""}</div>`; }).join("")}
 ${svcHoy.map(k=>{ const c=svcCfg(k), p=P(c.persona), v=visitas(k).find(x=>x.fecha===d);
   return `<div class="prow"><span class="pi">${ic(SVC[k].ic)}</span><div class="nm"><b>${SVC[k].n}${p?" · "+esc(first(p.nombre)):""}</b><span>${v?"Vino"+(v.llegada?" a las "+esc(v.llegada):""):"Le toca venir hoy"}</span></div>${v?`<span class="pill" style="background:var(--okbg);color:var(--ok)">${ic("check")} Vino</span>`:`<button class="btn sm" data-act="newVisita" data-k="${k}">Vino</button>`}</div>`; }).join("")}</div>`:`<p class="muted small" style="margin:0">Hoy no viene nadie según los días cargados en Personal.</p>`}</section>
 <section class="hfsec"><div class="sec-h"><h2>Tareas de hoy</h2><span class="sp"></span><button class="btn ghost sm" data-act="go" data-v="tareas">Ver tablero ${ic("chev")}</button></div>
@@ -984,7 +983,7 @@ ${ps.some(p=>okTel(p.cel))?`<button class="btn wa-b" data-act="sendAll">${ic("ch
 ${!ps.length?`<div class="banner">${ic("team")}<span>Cargá a tu personal para tener una columna por persona.</span><span class="sp"></span><button class="btn sm" data-act="newPersona">Agregar personal</button></div>`:""}
 <div class="board">${cols.map(p=>{ const xs=colItems(p); const n=xs.filter(x=>!isDone(x.t,x.d)).length;
   if(!p&&!xs.length&&ps.length) return "";
-  return `<section class="col"><div class="col-h">${avHTML(p)}<div class="who"><h3>${esc(p?p.nombre:"Sin asignar")}</h3><span class="sub">${p?esc(p.rol||"")+(worksOn(p,d)?" · viene hoy":""):"Tareas de la casa"}</span></div><span class="n">${n}</span>
+  return `<section class="col"><div class="col-h">${avHTML(p)}<div class="who"><h3>${esc(p?p.nombre:"Sin asignar")}</h3><span class="sub">${p?(worksOn(p,d)?"Viene hoy":""):"Tareas de la casa"}</span></div><span class="n">${n}</span>
 ${p&&okTel(p.cel)?`<a class="icon-btn wa" href="${esc(waHref(p.cel,waTasksText(p)))}" target="_blank" rel="noopener" data-act="waLog" data-id="${p.id}" aria-label="Mandar tareas de hoy por WhatsApp" title="Mandar tareas de hoy por WhatsApp">${ic("chat")}</a>`:""}</div>
 <div class="col-list">${xs.length?xs.map(x=>card(x,{day:S.tv!=="hoy"})).join(""):`<div class="col-empty">${S.tv==="hoy"?"Nada para hoy":"Sin tareas"}</div>`}</div>
 <div class="quick"><button data-act="newTask" data-resp="${p?p.id:""}">${ic("plus")} Agregar tarea</button></div></section>`; }).join("")}</div>`;
@@ -993,11 +992,11 @@ ${p&&okTel(p.cel)?`<a class="icon-btn wa" href="${esc(waHref(p.cel,waTasksText(p
 VIEWS.personal=()=>{ const ps=personal(true).filter(p=>!p.pendiente), inv=personal(true).filter(p=>p.pendiente&&p.activo!==false), d=TODAY(), mes=d.slice(0,7);
   return `<div class="sec-h"><p class="muted" style="margin:0;max-width:60ch;flex:1">Tu personal no necesita mail ni instalar nada: se agrega con su número de WhatsApp y le mandás sus tareas por ahí.${live()?" Cada persona tiene además un enlace propio para ver y marcar sus tareas y las compras.":""}</p>
 ${live()?`<button class="btn wa-b" data-act="invite">${ic("chat")} Invitar por WhatsApp</button>`:""}</div>
-<div class="pgrid">${inv.map(p=>`<div class="pcard pend"><div class="hd"><span class="av lg wait">${ic("clock")}</span><div class="nm"><h3>Invitación enviada</h3><span class="rol">${esc(p.rol||"")} · esperando que complete sus datos</span></div></div>
+<div class="pgrid">${inv.map(p=>`<div class="pcard pend"><div class="hd"><span class="av lg wait">${ic("clock")}</span><div class="nm"><h3>Invitación enviada</h3><span class="rol">Esperando que complete sus datos</span></div></div>
 <p class="small muted" style="margin:0">Cuando abra el enlace y cargue su nombre y su número, aparece acá sola.</p>
 <div class="ppl-acts"><a class="btn sm wa-b" href="${esc(waHref("",invText(p)))}" target="_blank" rel="noopener">${ic("chat")} Reenviar</a><button class="btn sm" data-act="copyInv" data-id="${p.id}">${ic("link")} Copiar enlace</button><button class="btn sm ghost danger" data-act="pendDel" data-id="${p.id}">${ic("trash")} Cancelar</button></div></div>`).join("")}
 ${ps.map(p=>{ const n=instDay(d,p.id).filter(x=>!isDone(x.t,x.d)).length, au=ausenteOn(p.id,d), am=ausencias(p.id).filter(a=>a.desde.startsWith(mes)||(a.hasta||"").startsWith(mes));
-  return `<div class="pcard ${p.activo===false?"arch":""}"><div class="hd">${avHTML(p,"lg")}<div class="nm"><h3>${esc(p.nombre)}</h3><span class="rol">${esc(p.rol||"")}${p.activo===false?" · ya no trabaja":""}${au?` · <b style="color:var(--bad)">ausente hoy</b>`:""}</span></div><button class="icon-btn" data-act="editPersona" data-id="${p.id}" aria-label="Editar">${ic("edit")}</button></div>
+  return `<div class="pcard ${p.activo===false?"arch":""}"><div class="hd">${avHTML(p,"lg")}<div class="nm"><h3>${esc(p.nombre)}</h3><span class="rol">${p.activo===false?"Ya no trabaja":""}${au?` · <b style="color:var(--bad)">ausente hoy</b>`:""}</span></div><button class="icon-btn" data-act="editPersona" data-id="${p.id}" aria-label="Editar">${ic("edit")}</button></div>
 <div class="days sm">${WEEK.map(x=>`<i class="${(p.dias||[]).includes(x)?"on":""} ${x===pYmd(d).getDay()?"hoy":""}">${DL[x]}</i>`).join("")}</div>
 <div class="ft">${p.entrada?`${ic("clock")}<span class="mono">${esc(p.entrada)}${p.salida?"–"+esc(p.salida):""}</span>`:""}<span class="sp"></span><span class="tel">${esc(fmtTel(p.cel))}</span></div>
 <div class="ppl-acts">${okTel(p.cel)?`<a class="btn sm wa-b" href="${esc(waHref(p.cel,waTasksText(p)))}" target="_blank" rel="noopener" data-act="waLog" data-id="${p.id}">${ic("chat")} Tareas de hoy (${n})</a><a class="btn sm" href="${esc(telHref(p.cel))}">${ic("phone")} Llamar</a>`:""}
@@ -1205,7 +1204,7 @@ function closeModal(){ $("#layer").innerHTML=""; render(); }
 const mHead=t=>`<div class="sheet-h"><h2 style="flex:1">${t}</h2><button class="icon-btn" data-act="close" aria-label="Cerrar">${ic("x")}</button></div>`;
 const daysPick=(sel,name="dias")=>`<div class="days" data-days="${name}">${WEEK.map(x=>`<button type="button" data-day="${x}" aria-pressed="${(sel||[]).includes(x)}">${DL[x]}</button>`).join("")}</div>`;
 const readDays=(root,name="dias")=>$$(`[data-days="${name}"] [aria-pressed="true"]`,root).map(b=>+b.dataset.day);
-const persOpts=(sel,empty="Sin asignar")=>`<option value="">${empty}</option>`+personal().map(p=>`<option value="${p.id}" ${p.id===sel?"selected":""}>${esc(p.nombre)}${p.rol?" · "+esc(p.rol):""}</option>`).join("");
+const persOpts=(sel,empty="Sin asignar")=>`<option value="">${empty}</option>`+personal().map(p=>`<option value="${p.id}" ${p.id===sel?"selected":""}>${esc(p.nombre)}</option>`).join("");
 function wireSheet(){ $$("#layer [data-day]").forEach(b=>b.onclick=()=>b.setAttribute("aria-pressed",b.getAttribute("aria-pressed")!=="true"));
   $$("#layer .chips button").forEach(b=>b.onclick=()=>b.setAttribute("aria-pressed",b.getAttribute("aria-pressed")!=="true")); }
 function confirmDel(btn,fn){ if(btn.dataset.sure){ fn(); return; } btn.dataset.sure="1"; btn.textContent="Tocá de nuevo para eliminar"; setTimeout(()=>{ if(btn.isConnected){ delete btn.dataset.sure; btn.innerHTML=ic("trash")+" Eliminar"; } },3500); }
@@ -1238,14 +1237,13 @@ ${id&&Object.keys(t.hechas||{}).length?`<div class="acts"><div class="eyebrow">�
 }
 
 function personaModal(id){
-  const p=id?S.items[id]:{nombre:"",rol:"Empleada doméstica",cel:"",dias:[1,2,3,4,5],entrada:"07:00",salida:"16:00",notas:"",activo:true};
+  const p=id?S.items[id]:{nombre:"",rol:"",cel:"",dias:[1,2,3,4,5],entrada:"07:00",salida:"16:00",notas:"",activo:true};
   const CPICK="contacts" in navigator&&navigator.contacts&&typeof navigator.contacts.select==="function";
   modal(`${mHead(id?"Editar personal":"Agregar personal")}<form class="sheet-b" id="fPer">
 <div class="help">Solo hace falta el nombre y el número de WhatsApp. Tu personal no necesita mail ni instalar nada.</div>
 ${!id&&live()?`<button type="button" class="btn wa-b" data-act="invite">${ic("chat")} Mejor invitarlo por WhatsApp: completa sus datos solo</button>`:""}
 <label class="fld"><span>Nombre</span><input class="inp" name="nombre" required maxlength="60" value="${esc(p.nombre)}" ${id?"":"autofocus"} autocomplete="off"></label>
 <label class="fld"><span>Número de WhatsApp</span><div class="row" style="flex-wrap:nowrap"><input class="inp" name="cel" type="tel" inputmode="tel" required value="${esc(p.cel||"")}" placeholder="0981 123 456" autocomplete="off">${CPICK?`<button class="btn" type="button" id="pickC">${ic("user")} Contactos</button>`:""}</div><small class="muted" id="celPrev">${p.cel?esc(fmtTel(p.cel)):""}</small></label>
-<label class="fld"><span>Qué hace</span><select class="inp" name="rol">${ROLES.map(r=>`<option ${r===p.rol?"selected":""}>${r}</option>`).join("")}</select></label>
 <div class="fld"><span>Días que viene</span>${daysPick(p.dias)}</div>
 <div class="g2"><label class="fld"><span>Entrada</span><input class="inp" type="time" name="entrada" value="${esc(p.entrada||"")}"></label><label class="fld"><span>Salida</span><input class="inp" type="time" name="salida" value="${esc(p.salida||"")}"></label></div>
 <label class="fld"><span>Notas</span><textarea class="inp" name="notas" rows="2" maxlength="600" placeholder="Documento, contacto de emergencia, sueldo…">${esc(p.notas||"")}</textarea></label>
@@ -1256,9 +1254,9 @@ ${id?`<button type="button" class="toggle" id="pAct" aria-pressed="${p.activo!==
   const pc=$("#pickC"); if(pc) pc.onclick=async()=>{ try{ const r=await navigator.contacts.select(["name","tel"],{multiple:false}); const c=r&&r[0]; if(!c) return; if(c.name&&c.name[0]&&!f.nombre.value) f.nombre.value=c.name[0]; if(c.tel&&c.tel[0]){ f.cel.value=c.tel[0]; f.cel.oninput(); } }catch(e){} };
   const act=$("#pAct"); if(act) act.onclick=()=>{ const on=act.getAttribute("aria-pressed")!=="true"; act.setAttribute("aria-pressed",on); act.innerHTML=ic("check")+(on?" Trabaja en la casa":" Ya no trabaja en la casa"); };
   f.onsubmit=e=>{ e.preventDefault(); if(!okTel(f.cel.value)){ f.cel.focus(); return toast("Cargá un número de WhatsApp válido."); }
-    const o={...p,nombre:f.nombre.value.trim(),cel:f.cel.value.trim(),rol:f.rol.value,dias:readDays(f),entrada:f.entrada.value,salida:f.salida.value,notas:f.notas.value.trim()};
+    const o={...p,nombre:f.nombre.value.trim(),cel:f.cel.value.trim(),dias:readDays(f),entrada:f.entrada.value,salida:f.salida.value,notas:f.notas.value.trim()};
     if(act) o.activo=act.getAttribute("aria-pressed")==="true";
-    if(!id){ o.id=rid(); o.tipo="personal"; o.token=tok(); o.color=personal(true).length%NC; o.orden=Date.now(); o.activo=true; put(o); log(`agregó a ${o.nombre} (${o.rol})`,"new",o.id);
+    if(!id){ o.id=rid(); o.tipo="personal"; o.token=tok(); o.color=personal(true).length%NC; o.orden=Date.now(); o.activo=true; put(o); log(`agregó a ${o.nombre}`,"new",o.id);
       if(/jardin/i.test(o.rol)&&!svcCfg("jardin").persona) saveSvc("jardin",{persona:o.id,dias:o.dias});
       if(/piscin/i.test(o.rol)&&!svcCfg("piscina").persona) saveSvc("piscina",{persona:o.id,dias:o.dias});
       closeModal(); toast(`Listo, agregaste a ${first(o.nombre)}.`); return; }
@@ -1268,13 +1266,12 @@ ${id?`<button type="button" class="toggle" id="pAct" aria-pressed="${p.activo!==
 function inviteModal(){
   modal(`${mHead("Invitar por WhatsApp")}<form class="sheet-b" id="fInvP">
 <div class="help">Se abre tu WhatsApp, elegís a la persona y le llega un enlace. Ella completa su nombre y su número, y queda agregada a tu personal sola.</div>
-<label class="fld"><span>Qué hace</span><select class="inp" name="rol">${ROLES.map(r=>`<option>${r}</option>`).join("")}</select></label>
 <div class="fld"><span>Días que viene</span>${daysPick([1,2,3,4,5])}</div>
 <div class="g2"><label class="fld"><span>Entrada</span><input class="inp" type="time" name="entrada" value="07:00"></label><label class="fld"><span>Salida</span><input class="inp" type="time" name="salida" value="16:00"></label></div>
 <div class="row"><button class="btn wa-b" type="submit">${ic("chat")} Abrir WhatsApp</button>${navigator.share?`<button class="btn" type="button" id="invSh">${ic("link")} Otra app</button>`:""}</div></form>`,"narrow");
   wireSheet(); const f=$("#fInvP");
-  const crear=()=>{ const o={id:rid(),tipo:"personal",pendiente:true,nombre:"",cel:"",rol:f.rol.value,dias:readDays(f),entrada:f.entrada.value,salida:f.salida.value,notas:"",token:tok(),color:personal(true).length%NC,orden:Date.now(),activo:true,invitado:Date.now()};
-    put(o); log(`invitó por WhatsApp a una persona nueva (${o.rol})`,"wa",o.id); return o; };
+  const crear=()=>{ const o={id:rid(),tipo:"personal",pendiente:true,nombre:"",cel:"",rol:"",dias:readDays(f),entrada:f.entrada.value,salida:f.salida.value,notas:"",token:tok(),color:personal(true).length%NC,orden:Date.now(),activo:true,invitado:Date.now()};
+    put(o); log(`invitó por WhatsApp a una persona nueva`,"wa",o.id); return o; };
   f.onsubmit=e=>{ e.preventDefault(); const o=crear(); window.open(waHref("",invText(o)),"_blank","noopener"); closeModal(); go("personal"); toast("Cuando complete sus datos aparece en tu personal."); };
   const sh=$("#invSh"); if(sh) sh.onclick=()=>{ const o=crear(); navigator.share({text:invText(o)}).catch(()=>{}); closeModal(); go("personal"); };
 }
@@ -1316,7 +1313,7 @@ function saveSvc(k,o){ const c=all("servicio").find(s=>s.clave===k); put({...(c|
 function svcModal(k){ const s=SVC[k], c=svcCfg(k);
   const cand=personal().sort((a,b)=>(b.rol===s.rol)-(a.rol===s.rol));
   modal(`${mHead(s.n+": configurar")}<form class="sheet-b" id="fSvc">
-<label class="fld"><span>${s.rol}</span><select class="inp" name="persona"><option value="">Nadie</option>${cand.map(p=>`<option value="${p.id}" ${p.id===c.persona?"selected":""}>${esc(p.nombre)} · ${esc(p.rol)}</option>`).join("")}</select><small class="muted">Si todavía no está, agregalo primero en Personal con su WhatsApp.</small></label>
+<label class="fld"><span>${s.rol}</span><select class="inp" name="persona"><option value="">Nadie</option>${cand.map(p=>`<option value="${p.id}" ${p.id===c.persona?"selected":""}>${esc(p.nombre)}</option>`).join("")}</select><small class="muted">Si todavía no está, agregalo primero en Personal con su WhatsApp.</small></label>
 <div class="fld"><span>Días que tiene que venir</span>${daysPick(c.dias)}<small class="muted">Si un día que le toca no registrás la visita, Casa te avisa.</small></div>
 <div class="row"><button class="btn pri" type="submit">Guardar</button></div></form>`,"narrow");
   wireSheet(); const f=$("#fSvc");
@@ -1566,7 +1563,7 @@ async function staffView(token){
     $("#top").innerHTML=`<img class="mk" src="icon-192.png" alt="" style="display:block"><h1>${esc(data?data.casa:"Casa")}</h1>`;
     if(error||!data){ $("#view").innerHTML=`<div class="staff"><div class="empty"><h2>Este enlace no funciona</h2><p>${error?"No se pudo conectar. Revisá internet y volvé a abrirlo.":"Puede que el enlace esté incompleto o que lo hayan cambiado. Pedile el enlace nuevo a la dueña o el dueño de casa."}</p></div></div>`; return; }
     if(data.pendiente){
-      $("#view").innerHTML=`<div class="staff"><div class="hello"><div><div class="eyebrow">${esc(data.persona.rol||"")}</div><h1>¡Hola!</h1></div></div>
+      $("#view").innerHTML=`<div class="staff"><div class="hello"><div><div class="eyebrow">Invitación</div><h1>¡Hola!</h1></div></div>
 <p class="muted" style="margin:0">Te invitaron a sumarte al personal de <b>${esc(data.casa)}</b>. Completá tus datos y listo: desde este mismo enlace vas a ver tus tareas y las compras.</p>
 <form class="panel" id="fAlta" autocomplete="on"><label class="fld"><span>Tu nombre y apellido</span><input class="inp" name="nombre" required maxlength="60" autocomplete="name"></label>
 <label class="fld"><span>Tu número de WhatsApp</span><input class="inp" name="cel" type="tel" inputmode="tel" required maxlength="30" autocomplete="tel" placeholder="0981 123 456"></label>
