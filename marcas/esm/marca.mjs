@@ -7,10 +7,10 @@ export const titulo = "ESM · Tareas del equipo";
 export const appUrl = "https://esm-equipo.onrender.com/";
 export const host = "esm-equipo.onrender.com";
 
-// Proyecto de Supabase de ESM (separado del de Gabinete). Se completa al crearlo.
+// Proyecto de Supabase de ESM (separado del de Gabinete). Creado el 2026-10-28 en la cuenta de ESM (São Paulo).
 export const supabase = {
-  ref: "REF_PENDIENTE",
-  key: "KEY_PENDIENTE",
+  ref: "mgmaryhqtfqmpyjgjtrz",
+  key: "sb_publishable_NHQFiCuulShegzop2qK32A_rwB3p1mM",
   // primer administrador: con este mail se entra la primera vez y se carga al equipo
   admin: { email: "estudio@perezramirezarquitectura.com", nombre: "Jorge", rol: "Administrador" },
   contacto: "mailto:estudio@perezramirezarquitectura.com"
