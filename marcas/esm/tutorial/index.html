@@ -1,0 +1,30 @@
+<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Cómo instalar ESM</title><link rel="icon" href="../icon-192.png"><meta name="theme-color" content="#1E2326">
+<style>
+:root{--bg:#1E2326;--fg:#EEF0EE;--mut:#AEB6B8;--card:#272D30;--acc:#F2B705;--line:rgba(255,255,255,.12)}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif}
+main{max-width:560px;margin:0 auto;padding:28px 16px 48px}
+header{text-align:center}header img{width:200px}h1{font-size:26px;margin:14px 0 6px}p{color:var(--mut);margin:0 0 18px}
+.tabs{display:flex;gap:8px;margin:18px 0}.tabs button{flex:1;padding:12px 6px;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--fg);font:600 14px inherit;cursor:pointer}
+.tabs button[aria-pressed=true]{background:var(--acc);color:#1E2326;border-color:var(--acc)}
+video{width:100%;max-height:78vh;border-radius:16px;background:#000;display:block}
+ol{padding-left:22px;margin:18px 0}li{margin:8px 0}b{color:var(--fg)}
+.go{display:block;text-align:center;margin-top:24px;padding:14px;border-radius:12px;background:#1F5E5B;color:#fff;font-weight:600;text-decoration:none}
+</style></head><body><main>
+<header><img src="../logo.png" alt="ESM"><h1>Cómo instalar la app</h1><p>Elegí tu celular y mirá el video. Lleva menos de un minuto.</p></header>
+<div class="tabs" role="group">
+ <button data-v="iphone-safari">iPhone · Safari</button><button data-v="iphone-chrome">iPhone · Chrome</button><button data-v="android-chrome">Android · Chrome</button>
+</div>
+<video id="v" controls playsinline preload="metadata"></video>
+<ol id="pasos"></ol>
+<a class="go" href="../">Abrir ESM</a>
+</main><script>
+const P={
+ "iphone-safari":["Abrí el link de ESM en <b>Safari</b>.","Tocá <b>⋯</b> abajo a la derecha y después <b>Compartir</b> (en iPhones más viejos, el botón Compartir está directo en la barra).","Deslizá hacia arriba y tocá <b>Agregar a inicio</b>.","Dejá activado <b>Abrir como app web</b> y tocá <b>Agregar</b>.","Abrí ESM desde el ícono nuevo, escribí tu mail y el código que te llega."],
+ "iphone-chrome":["Abrí el link de ESM en <b>Chrome</b>.","Tocá el botón <b>Compartir</b> arriba a la derecha, al lado de la dirección.","Deslizá y tocá <b>Agregar a pantalla de inicio</b>.","Tocá <b>Agregar</b>.","Abrí ESM desde el ícono nuevo, escribí tu mail y el código que te llega."],
+ "android-chrome":["Abrí el link de ESM en <b>Chrome</b>.","Tocá el menú <b>⋮</b> arriba a la derecha.","Tocá <b>Instalar app</b> (o <b>Agregar a la pantalla principal</b>).","Tocá <b>Instalar</b>.","Abrí ESM desde el ícono nuevo, escribí tu mail y el código que te llega."]};
+const v=document.getElementById("v"),ol=document.getElementById("pasos"),bs=[...document.querySelectorAll(".tabs button")];
+function ver(k){bs.forEach(b=>b.setAttribute("aria-pressed",b.dataset.v===k));v.poster=k+".jpg";v.src=k+".mp4";ol.innerHTML=P[k].map(t=>"<li>"+t+"</li>").join("");}
+bs.forEach(b=>b.onclick=()=>ver(b.dataset.v));
+const ua=navigator.userAgent;ver(/Android/.test(ua)?"android-chrome":/iPhone|iPad/.test(ua)?(/CriOS/.test(ua)?"iphone-chrome":"iphone-safari"):"iphone-safari");
+</script></body></html>

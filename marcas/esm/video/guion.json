@@ -1,0 +1,42 @@
+{
+ "iphone-safari": {
+  "titulo": "Cómo instalar ESM en iPhone con Safari",
+  "escenas": [
+   {"tipo":"titulo","h1":"Instalá ESM en tu <b>iPhone</b>","p":"Con Safari, en menos de un minuto.","url":1,"voz":"Hola. Te muestro cómo instalar ESM en tu iPhone con Safari. Es muy fácil.","dur":5},
+   {"pant":"safari","paso":1,"chip":"Safari","h1":"Abrí el link de ESM en <b>Safari</b>","p":"El que te mandaron por WhatsApp o mail.","toque":".pill","voz":"Paso uno. Abrí el link de ESM en Safari.","dur":5},
+   {"pant":"safari","paso":2,"chip":"Safari","h1":"Tocá los <b>tres puntitos ⋯</b> abajo a la derecha","p":"En iPhones más viejos, tocá directo el botón Compartir.","toque":"#dots","voz":"Paso dos. Tocá los tres puntitos, abajo a la derecha.","dur":6},
+   {"pant":"safariMenu","paso":3,"chip":"Safari","h1":"Tocá <b>Compartir</b>","toque":"#t","voz":"Paso tres. Tocá Compartir.","dur":4},
+   {"pant":"shareIOS","paso":4,"chip":"Compartir","h1":"Deslizá hacia arriba y tocá <b>Agregar a inicio</b>","p":"En algunos iPhone dice «Agregar a pantalla de inicio».","toque":"#t","voz":"Paso cuatro. Deslizá la lista hacia arriba y tocá Agregar a inicio.","dur":6},
+   {"pant":"addIOS","paso":5,"chip":"Agregar a inicio","h1":"Dejá activado «Abrir como app web» y tocá <b>Agregar</b>","toque":"#t","voz":"Paso cinco. Dejá activado abrir como app web, y tocá Agregar, arriba a la derecha.","dur":6},
+   {"pant":"homeIOS","chip":"Listo","h1":"¡Listo! Abrí ESM siempre <b>desde este ícono</b>","toque":"#t","voz":"Listo. Ya tenés el ícono de ESM en tu pantalla. Abrilo siempre desde ahí.","dur":5},
+   {"pant":"appIOS","paso":6,"chip":"Primera vez","h1":"Escribí tu mail y tocá <b>Recibir código</b>","p":"Te llega un código al mail: escribilo y entrás. No hace falta contraseña.","voz":"La primera vez, escribí tu mail, tocá Recibir código, y escribí el código que te llega.","dur":7},
+   {"tipo":"titulo","h1":"Activá los <b>avisos</b>","p":"En ESM tocá <b>Mi cuenta → Notificaciones → Activar</b> y después <b>Permitir</b>. Así te enterás cuando te asignan una tarea.","voz":"Por último, en Mi cuenta, tocá Activar notificaciones y Permitir, así te avisa cuando te asignan una tarea.","dur":7}
+  ]
+ },
+ "iphone-chrome": {
+  "titulo": "Cómo instalar ESM en iPhone con Chrome",
+  "escenas": [
+   {"tipo":"titulo","h1":"Instalá ESM en tu <b>iPhone</b>","p":"Con Chrome, en menos de un minuto.","url":1,"voz":"Hola. Te muestro cómo instalar ESM en tu iPhone con Chrome.","dur":5},
+   {"pant":"chrome","paso":1,"chip":"Chrome","h1":"Abrí el link de ESM en <b>Chrome</b>","p":"El que te mandaron por WhatsApp o mail.","toque":".cpill","voz":"Paso uno. Abrí el link de ESM en Chrome.","dur":5},
+   {"pant":"chrome","paso":2,"chip":"Chrome","h1":"Tocá el botón <b>Compartir</b> arriba a la derecha","p":"Está al lado de la dirección.","toque":"#share","voz":"Paso dos. Tocá el botón Compartir, arriba a la derecha, al lado de la dirección.","dur":6},
+   {"pant":"shareIOS","arg":"chrome","paso":3,"chip":"Compartir","h1":"Deslizá y tocá <b>Agregar a pantalla de inicio</b>","toque":"#t","voz":"Paso tres. Deslizá la lista y tocá Agregar a pantalla de inicio.","dur":6},
+   {"pant":"addIOS","arg":"chrome","paso":4,"chip":"Agregar","h1":"Tocá <b>Agregar</b>","toque":"#t","voz":"Paso cuatro. Tocá Agregar, arriba a la derecha.","dur":5},
+   {"pant":"homeIOS","chip":"Listo","h1":"¡Listo! Abrí ESM siempre <b>desde este ícono</b>","toque":"#t","voz":"Listo. Ya tenés el ícono de ESM en tu pantalla. Abrilo siempre desde ahí.","dur":5},
+   {"pant":"appIOS","paso":5,"chip":"Primera vez","h1":"Escribí tu mail y tocá <b>Recibir código</b>","p":"Te llega un código al mail: escribilo y entrás. No hace falta contraseña.","voz":"La primera vez, escribí tu mail, tocá Recibir código, y escribí el código que te llega.","dur":7},
+   {"tipo":"titulo","h1":"Activá los <b>avisos</b>","p":"En ESM tocá <b>Mi cuenta → Notificaciones → Activar</b> y después <b>Permitir</b>. Así te enterás cuando te asignan una tarea.","voz":"Por último, en Mi cuenta, tocá Activar notificaciones y Permitir, así te avisa cuando te asignan una tarea.","dur":7}
+  ]
+ },
+ "android-chrome": {
+  "titulo": "Cómo instalar ESM en Android con Chrome",
+  "escenas": [
+   {"tipo":"titulo","h1":"Instalá ESM en tu <b>Android</b>","p":"Con Chrome, en menos de un minuto.","url":1,"voz":"Hola. Te muestro cómo instalar ESM en tu celular Android con Chrome.","dur":5},
+   {"pant":"android","and":1,"paso":1,"chip":"Chrome","h1":"Abrí el link de ESM en <b>Chrome</b>","p":"Si se abrió en otra app, tocá ⋮ y «Abrir en Chrome».","toque":".cpill","voz":"Paso uno. Abrí el link de ESM en Chrome.","dur":5},
+   {"pant":"android","and":1,"paso":2,"chip":"Chrome","h1":"Tocá el menú <b>⋮</b> arriba a la derecha","toque":"#dots","voz":"Paso dos. Tocá los tres puntitos, arriba a la derecha.","dur":5},
+   {"pant":"androidMenu","and":1,"paso":3,"chip":"Menú","h1":"Tocá <b>Instalar app</b>","p":"O «Agregar a la pantalla principal».","toque":"#t","voz":"Paso tres. Tocá Instalar app. En algunos celulares dice agregar a la pantalla principal.","dur":6},
+   {"pant":"androidDlg","and":1,"paso":4,"chip":"Instalar","h1":"Tocá <b>Instalar</b>","toque":"#t","voz":"Paso cuatro. Tocá Instalar.","dur":4},
+   {"pant":"homeAnd","and":1,"chip":"Listo","h1":"¡Listo! Abrí ESM siempre <b>desde este ícono</b>","toque":"#t","voz":"Listo. Ya tenés el ícono de ESM en tu pantalla. Abrilo siempre desde ahí.","dur":5},
+   {"pant":"appAnd","and":1,"paso":5,"chip":"Primera vez","h1":"Escribí tu mail y tocá <b>Recibir código</b>","p":"Te llega un código al mail: escribilo y entrás. No hace falta contraseña.","voz":"La primera vez, escribí tu mail, tocá Recibir código, y escribí el código que te llega.","dur":7},
+   {"tipo":"titulo","h1":"Activá los <b>avisos</b>","p":"En ESM tocá <b>Mi cuenta → Notificaciones → Activar</b> y después <b>Permitir</b>. Así te enterás cuando te asignan una tarea.","voz":"Por último, en Mi cuenta, tocá Activar notificaciones y Permitir, así te avisa cuando te asignan una tarea.","dur":7}
+  ]
+ }
+}
