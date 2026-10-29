@@ -93,7 +93,7 @@ export const textosFunciones = [
 
 // Versión propia de ESM (se suma a la de Gabinete). Subirla cada vez que se publica un cambio solo de ESM,
 // así los celulares ven el aviso "Hay una versión nueva".
-export const versionMarca = 3;
+export const versionMarca = 4;
 
 // Cambios de funciones que tiene solo ESM, aplicados sobre el código de Gabinete antes de los textos.
 // Fecha de la carrera en cada tablero: se ve en el tablero, en el Calendario y en Google Calendar.

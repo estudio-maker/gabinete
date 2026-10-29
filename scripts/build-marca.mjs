@@ -53,6 +53,13 @@ html = aplicar(html, [
 html = html.split("Gabinete").join(M.nombre);
 if (M.css) html = aplicar(html, [["</head>", `<style>${M.css}</style></head>`]], "index.html");
 if (M.colorTema) html = reemplazarLinea(html, /<meta name="theme-color" content="[^"]*">/, `<meta name="theme-color" content="${M.colorTema}">`, "index.html");
+// íconos y manifest con versión en el link: así el navegador no usa los íconos viejos que guardó
+const vIcono = "?v=" + (M.versionMarca || 1);
+html = aplicar(html, [
+  ['<link rel="icon" href="icon-192.png">', `<link rel="icon" href="icon-192.png${vIcono}">`],
+  ['<link rel="apple-touch-icon" href="apple-touch-icon.png">', `<link rel="apple-touch-icon" href="apple-touch-icon.png${vIcono}">`],
+  ['<link rel="manifest" href="manifest.webmanifest">', `<link rel="manifest" href="manifest.webmanifest${vIcono}">`]
+], "index.html");
 // No puede quedar nada del estudio
 const resto = html.match(/Pérez|Ramírez|perezramirez|Arquitectura|estudio|ObraSys|github\.io|upvcwajccsmnqqvltgxp/g);
 if (resto) {
@@ -67,7 +74,7 @@ const man = JSON.parse(leer("manifest.webmanifest"));
 man.name = M.titulo; man.short_name = M.nombre;
 if (M.colorTema) { man.background_color = M.colorTema; man.theme_color = M.colorTema; }
 // íconos a sangre completa: sirven también recortados en círculo (Android)
-man.icons = man.icons.map(i => ({ ...i, purpose: "any maskable" }));
+man.icons = man.icons.map(i => ({ ...i, src: i.src + vIcono, purpose: "any maskable" }));
 escribir(path.join(SITIO, "manifest.webmanifest"), JSON.stringify(man, null, 1));
 for (const f of ["logo.png", "icon-192.png", "icon-512.png", "apple-touch-icon.png"]) fs.copyFileSync(path.join(DIR, f), path.join(SITIO, f));
 // tutorial (página y videos)
