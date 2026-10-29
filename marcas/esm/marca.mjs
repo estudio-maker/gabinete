@@ -85,3 +85,76 @@ export const textosFunciones = [
   ['"Gabinete se actualizó"', '"ESM se actualizó"'],
   ['title: "Gabinete"', 'title: "ESM"']
 ];
+
+// Versión propia de ESM (se suma a la de Gabinete). Subirla cada vez que se publica un cambio solo de ESM,
+// así los celulares ven el aviso "Hay una versión nueva".
+export const versionMarca = 2;
+
+// Cambios de funciones que tiene solo ESM, aplicados sobre el código de Gabinete antes de los textos.
+// Fecha de la carrera en cada tablero: se ve en el tablero, en el Calendario y en Google Calendar.
+export const parches = [
+  ['place:"place",color:"color",archived', 'place:"place",eventDate:"event_date",color:"color",archived'],
+  ['"due","start_date","due_time"]);', '"due","start_date","due_time","event_date"]);'],
+  ['"dueTime","createdBy","uid"]);', '"dueTime","createdBy","uid","eventDate"]);'],
+  ['<label class="fld"><span>Ubicación</span><input class="inp" id="pj-place" value="${esc(p.place||"")}" placeholder="Opcional"></label></div>',
+   '<label class="fld"><span>Ubicación</span><input class="inp" id="pj-place" value="${esc(p.place||"")}" placeholder="Opcional"></label></div>\n<label class="fld"><span>Fecha de la carrera <span class="muted" style="font-weight:400">aparece en el Calendario y en Google Calendar</span></span><input class="inp" type="date" id="pj-date" value="${esc(p.eventDate||"")}"></label>'],
+  ['place:$("#pj-place").value.trim()};', 'place:$("#pj-place").value.trim(),eventDate:$("#pj-date").value||""};'],
+  ['${p.private?" · Privado, solo lo ven los designados":""}</span></div>',
+   '${p.private?" · Privado, solo lo ven los designados":""}${p.eventDate?" · 🏁 Carrera: "+esc(fmtD(p.eventDate)+" "+pYmd(p.eventDate).getFullYear()):""}</span></div>'],
+  // Calendario: la fecha de cada carrera arriba de las tareas del día
+  ['const by={}; ts.forEach', 'const evs={}; projectsL().forEach(p=>{ if(p.eventDate&&(!pid||p.id===pid)) (evs[p.eventDate]=evs[p.eventDate]||[]).push(p); });\n  const by={}; ts.forEach'],
+  ['<span class="dn">${d.getDate()}</span>', '<span class="dn">${d.getDate()}${evs[ds]?" 🏁":""}</span>'],
+  ['<div class="dchips">${L.slice(0,tn)', '<div class="dchips">${(evs[ds]||[]).map(p=>`<div class="cc ev" data-act="openProj" data-pid="${esc(p.id)}" style="${pc(p)}" title="Carrera: ${esc(p.name)}"><span class="cb">Carrera</span><span>🏁 ${esc(p.name)}</span></div>`).join("")}${L.slice(0,tn)'],
+  ['${sl.length?groupByBoard(sl)', '${(evs[sel]||[]).map(p=>`<div class="cc ev" data-act="openProj" data-pid="${esc(p.id)}" style="${pc(p)};margin-bottom:10px;padding:8px 10px;font-size:14px"><span class="cb">Carrera</span><span>🏁 <b>${esc(p.name)}</b>${p.place?" · "+esc(p.place):""}</span></div>`).join("")}${sl.length?groupByBoard(sl)'],
+  ['.cc{flex-direction:column', '.cc.ev{cursor:pointer;font-weight:600;background:color-mix(in srgb,var(--pc) 16%,var(--sheet))}\n.cc{flex-direction:column']
+];
+
+// Google Calendar: la fecha de cada carrera como evento de todo el día para quienes ven ese tablero.
+export const parchesFunciones = { gcal: [
+  ['    for (const r of Object.values(rows)) { await dropEvent(acc, r); n.quitadas++; }',
+   `    for (const p of await boardsFor(id)) {
+      const r = await putEvent(acc, p, rows[p.id], await boardBody(p));
+      if (r === "creada") n.creadas++; else if (r === "actualizada") n.actualizadas++;
+      delete rows[p.id];
+    }
+    for (const r of Object.values(rows)) { await dropEvent(acc, r); n.quitadas++; }`],
+  ['/** Sincroniza una tarea en el calendario',
+   `// ---- fecha de la carrera de cada tablero ----
+const BOARD_COLS = "id,name,code,place,private,team,lead,created_by,event_date,archived";
+const seesBoard = (p, id, admin) => !p.private || admin || p.created_by === id || p.lead === id || (p.team || []).includes(id);
+async function boardsFor(id) {
+  const ps = await rest(\`projects?event_date=not.is.null&archived=eq.false&select=\${BOARD_COLS}\`);
+  const admin = !!((await rest(\`members?id=eq.\${id}&select=is_admin\`))[0] || {}).is_admin;
+  return ps.filter(p => seesBoard(p, id, admin));
+}
+async function boardBody(p) {
+  const body = { summary: "🏁 " + (p.code ? p.code + " · " : "") + p.name,
+    description: "Fecha de la carrera en ESM" + (p.place ? "\\nLugar: " + p.place : "") + "\\n\\nAbrir ESM: " + APP,
+    start: { date: p.event_date }, end: { date: addDay(p.event_date) }, reminders: { useDefault: true }, transparency: "transparent",
+    source: { title: "ESM", url: APP }, extendedProperties: { private: { gabinete: p.id } } };
+  if (p.private) body.visibility = "private";
+  return { body, huella: await hash(JSON.stringify(body)) };
+}
+async function syncBoard(id) {
+  const p = (await rest(\`projects?id=eq.\${id}&select=\${BOARD_COLS}\`))[0] || null;
+  const rows = await rest(\`gcal_eventos?task_id=eq.\${id}&select=*\`);
+  const accs = await rest("gcal_cuentas?calendar_id=not.is.null&select=*");
+  const admins = new Set((await rest("members?is_admin=eq.true&select=id")).map(m => m.id));
+  const ev = p && p.event_date && !p.archived ? await boardBody(p) : null;
+  let done = 0;
+  for (const acc of accs) {
+    const row = rows.find(r => r.member_id === acc.member_id);
+    try {
+      if (ev && seesBoard(p, acc.member_id, admins.has(acc.member_id))) await putEvent(acc, p, row, ev);
+      else if (row) await dropEvent(acc, row);
+      done++;
+    } catch (e) { console.warn("gcal board", acc.member_id, String(e)); }
+  }
+  return { cuentas: done };
+}
+/** Sincroniza una tarea en el calendario`],
+  ['if (b.secret && (b.action === "task" || b.action === "sync_all")) {',
+   'if (b.secret && (b.action === "task" || b.action === "board" || b.action === "sync_all")) {'],
+  ['      if (b.action === "task") return UUID.test',
+   '      if (b.action === "board") return UUID.test(b.id || "") ? J({ ok: true, ...(await syncBoard(b.id)) }) : J({ ok: false, error: "Tablero inválido" }, 400);\n      if (b.action === "task") return UUID.test']
+] };

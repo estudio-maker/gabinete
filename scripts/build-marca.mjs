@@ -33,6 +33,8 @@ fs.rmSync(OUT, { recursive: true, force: true });
 
 /* ---------- app ---------- */
 let html = leer("index.html");
+if (M.parches) html = aplicar(html, M.parches, "index.html (parches de la marca)");
+if (M.versionMarca) html = reemplazarLinea(html, /const APP_VERSION="([^"]*)"/, `const APP_VERSION="$1-${MARCA}.${M.versionMarca}"`, "index.html");
 const SUPA_URL = `https://${M.supabase.ref}.supabase.co`;
 html = aplicar(html, M.textos, "index.html");
 html = reemplazarLinea(html, /const SUPA_URL="[^"]*";/, `const SUPA_URL="${SUPA_URL}";`, "index.html");
@@ -71,6 +73,7 @@ const sqls = fs.readdirSync(path.join(ROOT, "supabase")).filter(f => /^\d\d_.*\.
 const a = M.supabase.admin;
 let sql = `-- ${M.titulo} · instalación completa de la base (proyecto nuevo y vacío)\n-- Armado desde Gabinete: ${sqls.join(", ")}\n\n`;
 for (const f of sqls) sql += `-- ======== ${f} ========\n` + leer("supabase/" + f) + "\n\n";
+if (fs.existsSync(path.join(DIR, "extra.sql"))) sql += `-- ======== solo ${M.nombre}: extra.sql ========\n` + fs.readFileSync(path.join(DIR, "extra.sql"), "utf8") + "\n\n";
 sql = sql.split("upvcwajccsmnqqvltgxp").join(M.supabase.ref)
   .split("'gabinete-vencimientos'").join(`'${MARCA}-vencimientos'`)
   .split("'gabinete-gcal'").join(`'${MARCA}-gcal'`);
@@ -83,6 +86,7 @@ escribir(path.join(BASE, "instalar.sql"), sql);
 for (const fn of ["push", "gcal"]) {
   for (const f of fs.readdirSync(path.join(ROOT, "supabase/functions", fn))) {
     let s = leer(`supabase/functions/${fn}/${f}`);
+    if (M.parchesFunciones && M.parchesFunciones[fn] && f === "index.ts") s = aplicar(s, M.parchesFunciones[fn], `${fn}/${f} (parches de la marca)`);
     for (const [de, aa] of M.textosFunciones) s = s.split(de).join(aa);
     s = s.split("Gabinete").join(M.nombre);
     escribir(path.join(BASE, "functions", fn, f), s);
