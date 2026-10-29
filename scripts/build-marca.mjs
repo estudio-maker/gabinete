@@ -51,6 +51,8 @@ html = aplicar(html, [
   ['<div id="loginBody"><p>Cargando…</p></div>', '<div id="loginBody"><p>Cargando…</p></div><p style="margin:18px 0 0;font-size:13px"><a href="tutorial/" style="color:inherit;opacity:.85">▶ Video: cómo instalar la app en el celular</a></p>']
 ], "index.html");
 html = html.split("Gabinete").join(M.nombre);
+if (M.css) html = aplicar(html, [["</head>", `<style>${M.css}</style></head>`]], "index.html");
+if (M.colorTema) html = reemplazarLinea(html, /<meta name="theme-color" content="[^"]*">/, `<meta name="theme-color" content="${M.colorTema}">`, "index.html");
 // No puede quedar nada del estudio
 const resto = html.match(/Pérez|Ramírez|perezramirez|Arquitectura|estudio|ObraSys|github\.io|upvcwajccsmnqqvltgxp/g);
 if (resto) {
@@ -63,6 +65,9 @@ escribir(path.join(SITIO, "index.html"), html);
 escribir(path.join(SITIO, "sw.js"), leer("sw.js").split("Gabinete").join(M.nombre));
 const man = JSON.parse(leer("manifest.webmanifest"));
 man.name = M.titulo; man.short_name = M.nombre;
+if (M.colorTema) { man.background_color = M.colorTema; man.theme_color = M.colorTema; }
+// íconos a sangre completa: sirven también recortados en círculo (Android)
+man.icons = man.icons.map(i => ({ ...i, purpose: "any maskable" }));
 escribir(path.join(SITIO, "manifest.webmanifest"), JSON.stringify(man, null, 1));
 for (const f of ["logo.png", "icon-192.png", "icon-512.png", "apple-touch-icon.png"]) fs.copyFileSync(path.join(DIR, f), path.join(SITIO, f));
 // tutorial (página y videos)

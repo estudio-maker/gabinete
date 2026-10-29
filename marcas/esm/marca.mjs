@@ -22,7 +22,7 @@ export const notifyUrl = "";
 const FEC = "2026-10-28";
 // Lo que se muestra la primera vez que alguien entra (reemplaza las novedades de Gabinete)
 export const bienvenida = [
-  ["boards", "<b>Tableros por carrera o proyecto:</b> cada uno con sus columnas Pendiente, En curso, En revisión y Terminado. Arrastrá las tareas con el mouse, o en el celular mantenelas apretadas y movelas a otra columna, tablero o persona."],
+  ["boards", "<b>Un tablero por carrera:</b> cada uno con sus columnas Pendiente, En curso, En revisión y Terminado. Arrastrá las tareas con el mouse, o en el celular mantenelas apretadas y movelas a otra columna, tablero o persona."],
   ["team", "<b>Equipo:</b> el administrador suma a cada persona con su mail en <b>Equipo → Gestionar equipo</b>. Cada uno entra con su mail y un código, desde la computadora o el celular."],
   ["home", "<b>Mis tareas</b> se ordena sola: primero lo vencido o que vence hoy, después lo urgente. Tocá las tarjetas de arriba para ver directo esas tareas."],
   ["cal", "<b>Calendario</b> con todas las tareas con fecha, y conexión opcional con tu Google Calendar en <b>Mi cuenta</b>."],
@@ -47,11 +47,11 @@ export const textos = [
   ['"Alguien del estudio"', '"Alguien del equipo"'],
   ['te asignó una tarea en Gabinete, el sistema de tareas de Pérez Ramírez Arquitectura.', 'te asignó una tarea en ESM, el sistema de tareas del equipo.'],
   ['>Gabinete · Pérez Ramírez Arquitectura</div>', '>ESM · Tareas del equipo</div>'],
-  ['Creá un tablero por cada obra o proyecto del estudio.', 'Creá un tablero por cada carrera o proyecto.'],
+  ['Creá un tablero por cada obra o proyecto del estudio.', 'Creá un tablero por cada carrera.'],
   ['Sumá a cada persona del estudio para poder asignarle tareas.', 'Sumá a cada persona de la empresa para poder asignarle tareas.'],
   ['Agenda compartida del estudio:', 'Agenda compartida de la empresa:'],
   ['con los que trabaja el estudio.', 'con los que trabaja la empresa.'],
-  ['<b>Gabinete</b><span>Tareas del estudio</span>', '<b>ESM</b><span>Tareas del equipo</span>'],
+  ['<b>Gabinete</b><span>Tareas del estudio</span>', '<b>Tareas del equipo</b>'],
   ['label="Resto del estudio"', 'label="Resto del equipo"'],
   ['<div class="mgrp">Resto del estudio</div>', '<div class="mgrp">Resto del equipo</div>'],
   ['<h2>Equipo del estudio</h2>', '<h2>Equipo de ESM</h2>'],
@@ -69,12 +69,17 @@ export const textos = [
   ['${grp("obra","Obras")}', '${grp("obra","Carreras")}'],
   ['placeholder="Buscar tareas, obras, personas"', 'placeholder="Buscar tareas, carreras, personas"'],
   ['k==="obra"?"Obras":"Proyectos"', 'k==="obra"?"Carreras":"Proyectos"'],
-  ['<span>Tablero (obra o proyecto)</span>', '<span>Tablero (carrera o proyecto)</span>'],
-  ['Un tablero por cada obra o proyecto.', 'Un tablero por cada carrera o proyecto.'],
+  ['<span>Tablero (obra o proyecto)</span>', '<span>Tablero (carrera)</span>'],
+  ['Un tablero por cada obra o proyecto.', 'Un tablero por cada carrera.'],
   ['[["obra","Obra"],["proyecto","Proyecto"]]', '[["obra","Carrera"],["proyecto","Proyecto"]]'],
   ['placeholder="Ej. Dibujante BIM, Dirección de obra"', 'placeholder="Ej. Logística, Inscripciones, Prensa"'],
   ['placeholder="Ej. Enviar planos de instalación sanitaria al cliente"', 'placeholder="Ej. Confirmar el permiso municipal del circuito"'],
-  ['const pre=kind==="proyecto"?"P":"O";', 'const pre=kind==="proyecto"?"P":"C";']
+  ['const pre=kind==="proyecto"?"P":"O";', 'const pre=kind==="proyecto"?"P":"C";'],
+  // ESM no usa tableros de tipo "Proyecto": solo carreras
+  ['${sec("proyecto","Proyectos")}', ''],
+  ['${grp("proyecto","Proyectos")}', ''],
+  ['["obra","proyecto"].map(k=>', '["obra"].map(k=>'],
+  ['<div class="fld"><span>Tipo</span><div class="seg" role="group">', '<div class="fld" hidden><span>Tipo</span><div class="seg" role="group">']
 ];
 
 // Funciones de Supabase (push y gcal)
@@ -88,7 +93,7 @@ export const textosFunciones = [
 
 // Versión propia de ESM (se suma a la de Gabinete). Subirla cada vez que se publica un cambio solo de ESM,
 // así los celulares ven el aviso "Hay una versión nueva".
-export const versionMarca = 2;
+export const versionMarca = 3;
 
 // Cambios de funciones que tiene solo ESM, aplicados sobre el código de Gabinete antes de los textos.
 // Fecha de la carrera en cada tablero: se ve en el tablero, en el Calendario y en Google Calendar.
@@ -158,3 +163,22 @@ async function syncBoard(id) {
   ['      if (b.action === "task") return UUID.test',
    '      if (b.action === "board") return UUID.test(b.id || "") ? J({ ok: true, ...(await syncBoard(b.id)) }) : J({ ok: false, error: "Tablero inválido" }, 400);\n      if (b.action === "task") return UUID.test']
 ] };
+
+// Identidad visual de ESM: azul de la marca (#0071CD) para lo que se toca y lo que está "en curso",
+// azul noche en las barras para que el logo blanco resalte, y el amarillo se queda para avisos y botones de acción.
+export const colorTema = "#0B2545";
+export const css = `
+:root{--paper:#EDF0F3;--colbg:#F5F7F9;--line:#D5DCE3;--line2:#E6EAEE;--grid:rgba(0,113,205,.06);
+  --band:#0B2545;--bandfg:#EEF3F8;
+  --accent:#0071CD;--accent2:#0A84E0;--accentbg:#E3EFFA;
+  --st-doing:#0071CD;--c0:#0071CD}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --paper:#0C1218;--sheet:#151D25;--colbg:#111820;--line:#26323D;--line2:#1D2730;--grid:rgba(90,174,245,.05);
+  --band:#06111D;--accent:#5AAEF5;--accent2:#3C97E6;--accentbg:#0E2A44;--st-doing:#5AAEF5;--c0:#5AAEF5}}
+:root[data-theme="dark"]{
+  --paper:#0C1218;--sheet:#151D25;--colbg:#111820;--line:#26323D;--line2:#1D2730;--grid:rgba(90,174,245,.05);
+  --band:#06111D;--accent:#5AAEF5;--accent2:#3C97E6;--accentbg:#0E2A44;--st-doing:#5AAEF5;--c0:#5AAEF5}
+.login{background:radial-gradient(120% 90% at 50% 0%,#0071CD 0%,#0B2545 62%)}
+.login img.lg{width:220px}
+.brand img{width:150px}
+`;
