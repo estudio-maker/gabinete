@@ -54,6 +54,13 @@ html = html.split("Gabinete").join(M.nombre);
 if (M.css) html = aplicar(html, [["</head>", `<style>${M.css}</style></head>`]], "index.html");
 if (M.colorTema) html = reemplazarLinea(html, /<meta name="theme-color" content="[^"]*">/, `<meta name="theme-color" content="${M.colorTema}">`, "index.html");
 // íconos y manifest con versión en el link: así el navegador no usa los íconos viejos que guardó
+// el código se ofusca y "const APP_VERSION=..." deja de verse en el HTML publicado: el aviso de
+// versión nueva lee la versión de una etiqueta <meta> que queda a la vista
+const versionApp = html.match(/const APP_VERSION="([^"]+)"/)[1];
+html = aplicar(html, [
+  ['.match(/const APP_VERSION="([^"]+)"/)', '.match(/<meta name="app-version" content="([^"]+)">/)'],
+  ["</head>", `<meta name="app-version" content="${versionApp}"></head>`]
+], "index.html");
 const vIcono = "?v=" + (M.versionMarca || 1);
 html = aplicar(html, [
   ['<link rel="icon" href="icon-192.png">', `<link rel="icon" href="icon-192.png${vIcono}">`],
