@@ -16,6 +16,11 @@ export async function proteger(out, htmls, sws) {
     const f = path.join(out, rel);
     if (!fs.existsSync(f)) continue;
     let html = fs.readFileSync(f, "utf8");
+    // ofuscado, "const APP_VERSION=..." deja de verse en el HTML publicado y el aviso de versión nueva
+    // salía siempre: la versión queda a la vista en una etiqueta <meta> y el aviso la lee de ahí
+    const ver = html.match(/const APP_VERSION="([^"]+)"/);
+    if (ver) html = html.split('.match(/const APP_VERSION="([^"]+)"/)').join('.match(/<meta name="app-version" content="([^"]+)">/)')
+      .replace("</head>", `<meta name="app-version" content="${ver[1]}"></head>`);
     html = html.replace(/<script>([\s\S]*?)<\/script>/g, (m, code) => code.length > 2000 ? `<script>${obf(code)}</script>` : m);
     html = await minify(html, { collapseWhitespace: true, removeComments: true, minifyCSS: true, minifyJS: true });
     fs.writeFileSync(f, html);
